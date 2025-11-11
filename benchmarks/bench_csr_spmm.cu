@@ -12,7 +12,7 @@ int main (int argc, char** argv) {
     float sparsity = 0.7;
     float alpha = 1.0f;
     float beta  = 0.5f;
-    std::string algo_str = "warp_per_row";  // default algorithm
+    std::string algo_str = "naive";  // default algorithm
 
     // parse args
     for (int i = 1; i < argc; ++i) {
@@ -30,7 +30,8 @@ int main (int argc, char** argv) {
             algo_str = argv[++i];
         else if (arg == "-h" || arg == "--help") {
             std::cout << "Usage: " << argv[0]
-                      << " [-M <int>] [-s <float>] [-a <float>] [-b <float>] [-algo <string>]\n";
+                      << " [-M <int>] [-s <float>] [-a <float>] [-b <float>] [-algo <string>]\n" 
+                      << "Example: ./bench_csr_spmm -M 16 -s 0.7 -a  -b 0.5 -algo warp_per_row\n";
             return 0;
         } else {
             std::cerr << "Unknown or incomplete flag: " << arg << std::endl;
