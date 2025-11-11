@@ -48,3 +48,7 @@ then
 ./test_csr_utils
 ```
 
+
+## TODO
+- Profile kernels
+- cuSPARSELt
