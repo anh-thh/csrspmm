@@ -26,6 +26,7 @@
 │
 ├── torch_interface/
 │
+├── requirements.txt
 ├── Makefile                    # Build automation for kernels, tests, and benchmarks
 └── README.md
 ```
