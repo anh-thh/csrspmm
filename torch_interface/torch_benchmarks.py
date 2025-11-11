@@ -86,7 +86,7 @@ if __name__ == "__main__":
     beta = 0.5
     sparsity = 0.7
     n_warmup = 10
-    iterations = 100
+    iterations = 500
 
     # TODO: use argparse
 
