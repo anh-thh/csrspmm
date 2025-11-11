@@ -13,7 +13,7 @@ void dense_gemm_cpu(
             for (int k = 0; k < K; ++k) {
                 sum += A[i * K + k] * B[k * N + j];
             }
-            C[i * N + j] = (float) alpha * sum + beta * C[i * N + j];
+            C[i * N + j] = static_cast<float>(alpha * sum + beta * C[i * N + j]);
         }
     }
 }

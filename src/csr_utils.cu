@@ -95,3 +95,13 @@ void print_csr_matrix(const CSRMatrix& csr_matrix) {
     }
     std::cout << " ]" << std::endl << std::endl;
 }
+
+
+float csr_compression_ratio(const CSRMatrix& csr_matrix) {
+    int dense_size = csr_matrix.num_rows * csr_matrix.num_cols;
+    int csr_size = csr_matrix.nnz + csr_matrix.nnz + (csr_matrix.num_rows + 1); // values + col_idx + row_ptr
+    
+    float compression_ratio = static_cast<float>(dense_size) / static_cast<float>(csr_size);
+
+    return compression_ratio;
+}

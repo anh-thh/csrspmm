@@ -2,6 +2,7 @@
 #include "csr_spmm.cuh"
 #include "csr_utils.cuh"
 
+#define ACCUMULATOR_TYPE double
 
 __global__ void spmm_csr_dense_naive(
     int M, int N, int K,
@@ -13,7 +14,7 @@ __global__ void spmm_csr_dense_naive(
 
     // each thread handles one row of A
     for (int n = 0; n < N; ++n) {
-        double sum = 0.0f;
+        ACCUMULATOR_TYPE sum = 0.0f;
 
         // process non-zero elements in row
         int row_start = A.row_ptr[row];
@@ -25,7 +26,7 @@ __global__ void spmm_csr_dense_naive(
             sum += val * B[col * N + n];
         }
 
-        C[row * N + n] = (float) alpha * sum + beta * C[row * N + n];
+        C[row * N + n] = static_cast<float>(alpha * sum + beta * C[row * N + n]);
     }
 }
 
