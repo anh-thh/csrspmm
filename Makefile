@@ -8,7 +8,7 @@ help:
 
 # compiler settings
 NVCC      	= nvcc
-CXXFLAGS	= -O3 -std=c++17
+CXXFLAGS	= -O3 -std=c++17 --use_fast_math -Xptxas=-v -arch=sm_89 # NOTE: change -arch to fit your NVIDIA model
 
 DEBUGFLAGS = -g -O0 -src-in-ptx -lineinfo -std=c++17
 PROFFLAGS  = -O2 -g --generate-line-info -src-in-ptx -std=c++17

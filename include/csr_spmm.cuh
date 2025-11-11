@@ -4,6 +4,26 @@
 
 #define ACCUMULATOR_TYPE float
 
+
+enum Algo {
+    cuSPARSELt = 0,
+    naive,
+    warp_per_row,
+    numAlgos
+};
+
+
+
+// A[M,N] x B[N, K] => C[M, K]
+void run_csr_spmm(Algo algo,
+                  int M, int N, int K,
+                  float alpha, float beta,
+                  float* A_values,
+                  int* A_col_idx,
+                  int* A_row_ptr,
+                  float *B, 
+                  float *C);
+
 __global__ void csr_spmm_naive(
     int M, int N, int K,
     float alpha, 

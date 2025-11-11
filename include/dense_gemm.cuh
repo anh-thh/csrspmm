@@ -2,6 +2,8 @@
 
 void dense_gemm_cpu(
     int M, int N, int K,
-    float alpha, float* A, float* B, 
-    float beta, float* C);
+    float alpha, float beta, 
+    const float* A, 
+    const float* B, 
+    float* C);
 

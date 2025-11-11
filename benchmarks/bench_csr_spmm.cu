@@ -3,67 +3,10 @@
 #include "csr_spmm.cuh"
 #include "dense_utils.cuh"
 
-enum Algo {
-    cuSPARSELt = 0,
-    naive,
-    warp_per_row,
-    numAlgos
-};
 
+// #define ALGO warp_per_row
 #define ALGO warp_per_row
 #define REPS 500
-
-void run_csr_spmm(Algo algo,
-                  int M, int N, int K,
-                  float alpha, float beta,
-                  float* A_values,
-                  int* A_col_idx,
-                  int* A_row_ptr,
-                  float *B, 
-                  float *C) {
-    switch (algo) {
-    case cuSPARSELt: {
-        // Placeholder for cuSPARSELt
-        break;
-    }
-
-    case naive: {
-        const int block_size = 32;
-        const dim3 gridDim(ROUND_UP_TO_NEAREST(M, block_size));
-        const dim3 blockDim(block_size);
-
-        csr_spmm_naive<<<gridDim, blockDim>>>(M, N, K, 
-                                              alpha, beta,
-                                              A_values, 
-                                              A_col_idx,  
-                                              A_row_ptr,
-                                              B, C);
-        break;
-    }
-
-    case warp_per_row: {
-        const int threads_per_block = 128;
-        int warps_per_block   = threads_per_block / WARP_SIZE;
-        int num_blocks        = ROUND_UP_TO_NEAREST(M, warps_per_block);
-        dim3 blockDim(threads_per_block);
-        dim3 gridDim(num_blocks);
-
-        csr_spmm_warp_per_row<<<gridDim, blockDim>>>(M, N, K, alpha, beta,
-                                                     A_values,
-                                                     A_col_idx,
-                                                     A_row_ptr,
-                                                     B, C);
-        break;
-    }
-
-    default:
-        printf("Invalid algorithm: %d\n", algo);
-        exit(EXIT_FAILURE);
-    }
-
-    cudaCheck(cudaDeviceSynchronize());
-    cudaCheck(cudaGetLastError());
-}
 
 
 int main (int argc, char** argv) {
@@ -71,8 +14,8 @@ int main (int argc, char** argv) {
     //      Setup
     // ----------------------------------------------------------------------
     int M = 1024;
-    int N = 1024;
-    int K = 1024;
+    int N = M + 32;
+    int K = N + 32;
     float sparsity = 0.7;
     bool is_int = false;
 
@@ -85,15 +28,15 @@ int main (int argc, char** argv) {
     float dense2csr_tol = 0.0f;
 
     // create matrices 
-    float* h_A = (float*)malloc(M * K * sizeof(float));
-    float* h_B = (float*)malloc(K * N * sizeof(float));
-    float* h_C = (float*)malloc(M * N * sizeof(float));
-    init_random_dense_matrix(h_B, K, N, min_val, max_val, 0.0f, is_int);
-    init_random_dense_matrix(h_C, M, N, min_val, max_val, 0.0f, is_int);
-    init_random_dense_matrix(h_A, M, K, min_val, max_val, sparsity, is_int);
-   
+    float* h_A = (float*)malloc(M * N * sizeof(float));
+    float* h_B = (float*)malloc(N * K * sizeof(float));
+    float* h_C = (float*)malloc(M * K * sizeof(float));
+    init_random_dense_matrix(h_A, M, N, min_val, max_val, sparsity, is_int);
+    init_random_dense_matrix(h_B, N, K, min_val, max_val, 0.0f, is_int);
+    init_random_dense_matrix(h_C, M, K, min_val, max_val, 0.0f, is_int);
+    
     CSRMatrix A_csr;
-    dense2csr(h_A, M, K, A_csr, dense2csr_tol);
+    dense2csr(h_A, M, N, A_csr, dense2csr_tol);
 
 
     CSRMatrix d_A_csr;
@@ -108,10 +51,10 @@ int main (int argc, char** argv) {
                         (A_csr.num_rows + 1) * sizeof(int), cudaMemcpyHostToDevice));
 
     float *d_B, *d_C;
-    cudaCheck(cudaMalloc(&d_B, K * N * sizeof(float)));
-    cudaCheck(cudaMalloc(&d_C, M * N * sizeof(float)));
-    cudaCheck(cudaMemcpy(d_B, h_B, K * N * sizeof(float), cudaMemcpyHostToDevice));
-    cudaCheck(cudaMemcpy(d_C, h_C, M * N * sizeof(float), cudaMemcpyHostToDevice));
+    cudaCheck(cudaMalloc(&d_B, N * K * sizeof(float)));
+    cudaCheck(cudaMalloc(&d_C, M * K * sizeof(float)));
+    cudaCheck(cudaMemcpy(d_B, h_B, N * K * sizeof(float), cudaMemcpyHostToDevice));
+    cudaCheck(cudaMemcpy(d_C, h_C, M * K * sizeof(float), cudaMemcpyHostToDevice));
 
 
     // warm up
@@ -152,7 +95,7 @@ int main (int argc, char** argv) {
     cudaCheck(cudaEventElapsedTime(&elapsed_time, beg, end));
     elapsed_time /= 1000.; // Convert to seconds
 
-    double flops = 2.0 * A_csr.nnz * N;  // NOTE: 2 ops per nonzero × N columns
+    double flops = 2.0 * A_csr.nnz * K;  // NOTE: 2 ops per nonzero × K columns
     printf(
         "Average elapsed time: (%7.6f) s, performance: (%7.2f) GFLOPS. size: [%u×%u×%u]\n",
         elapsed_time / REPS,
