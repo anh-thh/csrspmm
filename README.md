@@ -40,12 +40,23 @@ pip install -r requirements.txt
 
 ## Usage
 
+To run unit test
 ```
 make test_csr_utils
 ```
 then 
 ```
 ./test_csr_utils
+```
+<br>
+
+To benchmark kernels
+```
+make -j3 all
+```
+then run script (you can change target algorithm and other parameters in `auto_benchmarks.sh`)
+```
+bash auto_benchmarks.sh
 ```
 
 
