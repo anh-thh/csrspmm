@@ -6,12 +6,12 @@
 enum Algo {
     cuSPARSELt = 0,
     naive,
-    warp,
+    warp_per_row,
     numAlgos
 };
 
-#define ALGO naive
-#define REPS 100
+#define ALGO warp_per_row
+#define REPS 500
 
 void run_csr_spmm(Algo algo,
                   int M, int N, int K,
@@ -38,6 +38,21 @@ void run_csr_spmm(Algo algo,
                                               A_col_idx,  
                                               A_row_ptr,
                                               B, C);
+        break;
+    }
+
+    case warp_per_row: {
+        const int threads_per_block = 128;
+        int warps_per_block   = threads_per_block / WARP_SIZE;
+        int num_blocks        = ROUND_UP_TO_NEAREST(M, warps_per_block);
+        dim3 blockDim(threads_per_block);
+        dim3 gridDim(num_blocks);
+
+        csr_spmm_warp_per_row<<<gridDim, blockDim>>>(M, N, K, alpha, beta,
+                                                     A_values,
+                                                     A_col_idx,
+                                                     A_row_ptr,
+                                                     B, C);
         break;
     }
 
