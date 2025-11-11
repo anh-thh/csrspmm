@@ -10,7 +10,6 @@ help:
 NVCC      	= nvcc
 CXXFLAGS	= -O2 -std=c++17
 
-# Extra flag sets
 DEBUGFLAGS = -g -O0 -src-in-ptx -lineinfo -std=c++17
 PROFFLAGS  = -O2 -g --generate-line-info -src-in-ptx -std=c++17
 

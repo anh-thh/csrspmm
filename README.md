@@ -28,5 +28,16 @@
 ├── Makefile                    # Build automation for kernels, tests, and benchmarks
 └── README.md
 ```
-
 NOTE: project structure is subjected to change
+
+
+## Usage
+
+```
+make test_csr_utils
+```
+then 
+```
+./test_csr_utils
+```
+
