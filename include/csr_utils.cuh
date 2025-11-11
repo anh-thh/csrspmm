@@ -11,6 +11,11 @@ struct CSRMatrix {
 };
 
 
-void dense2csr(const float* dense_matrix, int num_rows, int num_cols, CSRMatrix& csr_matrix);
+void dense2csr(
+    const float* dense_matrix, int num_rows, int num_cols, 
+    CSRMatrix& csr_matrix,
+    float tol = 0.0f);
+
 void csr2dense(const CSRMatrix& csr_matrix, float* dense_matrix);
+
 void print_csr_matrix(const CSRMatrix& csr_matrix);

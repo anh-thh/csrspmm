@@ -2,16 +2,22 @@
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
+#include <cmath>
+#include <cassert>
 
 
-void dense2csr(const float* dense_matrix, int num_rows, int num_cols, CSRMatrix& csr_matrix) {
+void dense2csr(
+    const float* dense_matrix, int num_rows, int num_cols, 
+    CSRMatrix& csr_matrix,
+    float tol) 
+{
     csr_matrix.num_rows = num_rows;
     csr_matrix.num_cols = num_cols;
 
     // count non-zero elements
     int nnz = 0;
     for (int i = 0; i < num_rows * num_cols; ++i) {
-        if (dense_matrix[i] != 0.0f)
+        if (fabsf(dense_matrix[i]) > tol)
             ++nnz;
     }
 
@@ -29,7 +35,7 @@ void dense2csr(const float* dense_matrix, int num_rows, int num_cols, CSRMatrix&
     for (int i = 0; i < num_rows; ++i) {
         for (int j = 0; j < num_cols; ++j) {
             float val = dense_matrix[i * num_cols + j];
-            if (val != 0.0f) {
+            if (fabsf(val) > tol) {
                 csr_matrix.values[nnz_index] = val;
                 csr_matrix.col_idx[nnz_index] = j;
                 ++nnz_index;
@@ -37,6 +43,8 @@ void dense2csr(const float* dense_matrix, int num_rows, int num_cols, CSRMatrix&
         }
         csr_matrix.row_ptr[i + 1] = nnz_index;
     }
+
+    assert(nnz_index == nnz && "Mismatch in counted and filled non-zero elements in CSR conversion.");
 }
 
 
