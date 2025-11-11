@@ -11,9 +11,32 @@
 #define cudaCheck(err) (cudaErrorCheck(err, __FILE__, __LINE__))
 #define cublasCheck(err) (cublasErrorCheck(err, __FILE__, __LINE__))
 
-#define ALGO warp_per_row
 
 int main(int argc, char** argv) {
+    std::string algo_str = "naive"; // default
+    if (argc > 1)
+        algo_str = argv[1];
+
+    // parse args
+    for (int i = 1; i < argc; ++i) {
+        std::string arg = argv[i];
+
+        if (arg == "-algo" && i + 1 < argc)
+            algo_str = argv[++i];
+        else if (arg == "-h" || arg == "--help") {
+            std::cout << "Usage: " << argv[0]
+                      << " [-algo <string>]\n"
+                      << "Example: ./bench_csr_spmm -algo warp_per_row\n";
+            return 0;
+        } else {
+            std::cerr << "Unknown or incomplete flag: " << arg << std::endl;
+            return 1;
+        }
+    }
+
+
+    Algo algo = parse_csr_algo(algo_str);
+
     int M = 1024;
     int N = M + 32;
     int K = N + 32;
@@ -68,7 +91,7 @@ int main(int argc, char** argv) {
     cudaCheck(cudaMemcpy(d_B, h_B, N * K * sizeof(float), cudaMemcpyHostToDevice));
     cudaCheck(cudaMemcpy(d_C, h_C, M * K * sizeof(float), cudaMemcpyHostToDevice));
 
-    run_csr_spmm(ALGO,
+    run_csr_spmm(algo,
                  M, N, K,
                  alpha, beta,
                  d_A_csr.values,
@@ -97,9 +120,9 @@ int main(int argc, char** argv) {
     // compare
     bool correct = compare_dense_matrices(h_C_ref, h_C_gpu, M, N, cmp_tol);
     if (correct) {
-        std::cout << "Pass: SPMM CSR kernel result is correct!" << std::endl;
+        std::cout << "Pass: " << algo_str << " kernel result is correct!" << std::endl;
     } else {
-        std::cout << "Error: SPMM CSR kernel result is incorrect!" << std::endl;
+        std::cout << "Error: SPMM " << algo_str << " result is incorrect!" << std::endl;
     }
 
     // free memory
