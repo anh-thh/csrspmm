@@ -87,7 +87,9 @@ void run_csr_spmm(Algo algo,
 
 
 
-
+/**
+ * Each thread computes one full row of C (1-D parellelism)
+ */
 __global__ void csr_spmm_naive(
     int M, int N, int K,
     float alpha, 
@@ -121,6 +123,11 @@ __global__ void csr_spmm_naive(
     }
 }
 
+
+/**
+ * Each thread computes a single element C[row, col], finer-grained parallelism 
+ * across both dimensions
+ */
 __global__ void csr_spmm_naive_2d(
     int M, int N, int K,
     float alpha,
