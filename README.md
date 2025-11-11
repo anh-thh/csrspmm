@@ -21,6 +21,7 @@
 │ └── dense_utils.cu 
 │
 ├── tests/                      # Unit and correctness tests
+│ ├── test_csr_utils.cu 
 │ └── test_spmm_csr.cu
 │
 ├── torch_interface/
