@@ -2,29 +2,51 @@
 #include "csr_utils.cuh"
 #include "csr_spmm.cuh"
 #include "dense_utils.cuh"
+#include <string>
 
-
-// #define ALGO warp_per_row
-#define ALGO warp_per_row
 #define REPS 500
 
 
 int main (int argc, char** argv) {
-    // ----------------------------------------------------------------------
-    //      Setup
-    // ----------------------------------------------------------------------
     int M = 1024;
+    float sparsity = 0.7;
+    float alpha = 1.0f;
+    float beta  = 0.5f;
+    std::string algo_str = "warp_per_row";  // default algorithm
+
+    // parse args
+    for (int i = 1; i < argc; ++i) {
+        std::string arg = argv[i];
+
+        if (arg == "-M" && i + 1 < argc)
+            M = std::atoi(argv[++i]);
+        else if (arg == "-s" && i + 1 < argc)
+            sparsity = std::atof(argv[++i]);
+        else if (arg == "-a" && i + 1 < argc)
+            alpha = std::atof(argv[++i]);
+        else if (arg == "-b" && i + 1 < argc)
+            beta = std::atof(argv[++i]);
+        else if (arg == "-algo" && i + 1 < argc)
+            algo_str = argv[++i];
+        else if (arg == "-h" || arg == "--help") {
+            std::cout << "Usage: " << argv[0]
+                      << " [-M <int>] [-s <float>] [-a <float>] [-b <float>] [-algo <string>]\n";
+            return 0;
+        } else {
+            std::cerr << "Unknown or incomplete flag: " << arg << std::endl;
+            return 1;
+        }
+    }
+    
+    
+    Algo algo = parse_csr_algo(algo_str);
     int N = M + 32;
     int K = N + 32;
-    float sparsity = 0.7;
     bool is_int = false;
 
     float min_val = -10.0f;
     float max_val = 10.0f;
 
-    float alpha = 1.0f;
-    float beta  = 0.5f;
-    
     float dense2csr_tol = 0.0f;
 
     // create matrices 
@@ -59,7 +81,7 @@ int main (int argc, char** argv) {
 
     // warm up
     for (int i = 0; i < 10; ++i) {
-        run_csr_spmm(ALGO, M, N, K,
+        run_csr_spmm(algo, M, N, K,
                      alpha, beta, 
                      d_A_csr.values,
                      d_A_csr.col_idx,
@@ -78,8 +100,8 @@ int main (int argc, char** argv) {
     cudaEventRecord(beg);
     for (int j = 0; j < REPS; j++)
     {
-        // runAlgo(ALGO, handle, m, n, k, alpha, dA, dB, beta, dC);
-        run_csr_spmm(ALGO, M, N, K,
+        // runAlgo(algo, handle, m, n, k, alpha, dA, dB, beta, dC);
+        run_csr_spmm(algo, M, N, K,
                      alpha, beta, 
                      d_A_csr.values,
                      d_A_csr.col_idx,

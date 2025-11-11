@@ -1,7 +1,8 @@
 #pragma once
 #include "csr_utils.cuh"
 #include <cuda_runtime.h>
-
+#include <string>
+#include <iostream>
 #define ACCUMULATOR_TYPE float
 
 
@@ -11,6 +12,16 @@ enum Algo {
     warp_per_row,
     numAlgos
 };
+
+
+inline Algo parse_csr_algo(const std::string& name) {
+    if (name == "cuSPARSELt") return cuSPARSELt;
+    if (name == "naive")      return naive;
+    if (name == "warp_per_row") return warp_per_row;
+
+    std::cerr << "Error: unknown algorithm name '" << name << "'\n";
+    std::exit(1);
+}
 
 
 
