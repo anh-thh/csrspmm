@@ -1,8 +1,9 @@
 import torch
 import torch_interface
 import time
+import numpy as np
 
-print(f"Pytorch {torch.__version__}\n")
+print(f"Pytorch {torch.__version__}")
 
 
 if not torch.cuda.is_available():
@@ -54,7 +55,6 @@ def fn_custom_csr_spmm(alpha, A_csr, beta, B, C):
     return torch_interface.csr_spmm(alpha, A_csr, beta, B, C)
 
 
-
 #  def test():
 #      A, B, C, A_csr = initialize_matrices(10, 10, 10, 0.7)
 #
@@ -72,14 +72,18 @@ def fn_custom_csr_spmm(alpha, A_csr, beta, B, C):
 #      else:
 #          print("FAIL: Results differ beyond tolerance.")
 
-    
+
+def report(name, times):
+    avg = np.mean(times) * 1000
+    std = np.std(times) * 1000
+    print(f"{name:<25}: {avg:8.3f} ms  +/- {std:5.3f}")
 
 
  
 if __name__ == "__main__":
     M, N, K = 1024, 1024, 1024
     alpha = 1.0
-    beta = 0.0
+    beta = 0.5
     sparsity = 0.7
     n_warmup = 10
     iterations = 100
@@ -96,8 +100,11 @@ if __name__ == "__main__":
     t_addmm = run_benchmark(fn_torch_sparse_addmm, alpha, A_csr, beta, B, C,
                             n_warmup=n_warmup, iterations=iterations)
 
-    t_custom = run_benchmark(fn_custom_csr_spmm,alpha, A_csr, beta, B, C,
-                             n_warmup=n_warmup, iterations=iterations)
+    #  t_custom = run_benchmark(fn_custom_csr_spmm,alpha, A_csr, beta, B, C,
+    #                           n_warmup=n_warmup, iterations=iterations)
 
+
+    report("torch.sparse.mm", t_mm)
+    report("torch.sparse.addmm", t_addmm)
 
     # process data, graph, etc.

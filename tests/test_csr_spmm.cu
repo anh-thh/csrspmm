@@ -5,11 +5,11 @@
 #include "dense_utils.cuh"
 #include "dense_gemm.cuh"
 #include <cstdlib>
+#include <cuda_runtime_api.h>
 #include <iostream>
 
 #define cudaCheck(err) (cudaErrorCheck(err, __FILE__, __LINE__))
 #define cublasCheck(err) (cublasErrorCheck(err, __FILE__, __LINE__))
-#define ROUND_UP_TO_NEAREST(M, N) (((M) + (N)-1) / (N))
 
 
 int main(int argc, char** argv) {
@@ -51,12 +51,15 @@ int main(int argc, char** argv) {
 
     // Allocate device memory
     CSRMatrix d_A_csr;
-    cudaCheck(cudaMalloc(&d_A_csr.row_ptr, (M + 1) * sizeof(int)));
+    cudaCheck(cudaMalloc(&d_A_csr.values,  A_csr.nnz * sizeof(float)));
     cudaCheck(cudaMalloc(&d_A_csr.col_idx, A_csr.nnz * sizeof(int)));
-    cudaCheck(cudaMalloc(&d_A_csr.values, A_csr.nnz * sizeof(float)));
-    cudaCheck(cudaMemcpy(d_A_csr.row_ptr, A_csr.row_ptr, (M + 1) * sizeof(int), cudaMemcpyHostToDevice));
-    cudaCheck(cudaMemcpy(d_A_csr.col_idx, A_csr.col_idx, A_csr.nnz * sizeof(int), cudaMemcpyHostToDevice));
-    cudaCheck(cudaMemcpy(d_A_csr.values, A_csr.values, A_csr.nnz * sizeof(float), cudaMemcpyHostToDevice));
+    cudaCheck(cudaMalloc(&d_A_csr.row_ptr, (A_csr.num_rows + 1) * sizeof(int)));
+    cudaCheck(cudaMemcpy(d_A_csr.values,  A_csr.values,  
+                         A_csr.nnz * sizeof(float), cudaMemcpyHostToDevice));
+    cudaCheck(cudaMemcpy(d_A_csr.col_idx, A_csr.col_idx, 
+                         A_csr.nnz * sizeof(int),   cudaMemcpyHostToDevice));
+    cudaCheck(cudaMemcpy(d_A_csr.row_ptr, A_csr.row_ptr, 
+                        (A_csr.num_rows + 1) * sizeof(int), cudaMemcpyHostToDevice));
 
     float *d_B, *d_C;
     cudaCheck(cudaMalloc(&d_B, K * N * sizeof(float)));
@@ -68,10 +71,11 @@ int main(int argc, char** argv) {
     dim3 gridDim(ROUND_UP_TO_NEAREST(M, 32));
     dim3 blockDim(32);   
 
-    spmm_csr_dense_naive<<<gridDim, blockDim>>>(
+    csr_spmm_naive<<<gridDim, blockDim>>>(
         M, N, K,
-        alpha, d_A_csr, d_B,
-        beta, d_C);
+        alpha, beta,
+        d_A_csr.values, d_A_csr.col_idx, d_A_csr.row_ptr,
+        d_B, d_C);
    
     cudaCheck(cudaGetLastError());
     cudaCheck(cudaDeviceSynchronize());

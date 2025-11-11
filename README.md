@@ -32,6 +32,12 @@
 NOTE: project structure is subjected to change
 
 
+## Requirements and Setup
+To setup Pytorch (conda virtual environment recommended)
+```
+pip install -r requirements.txt
+```
+
 ## Usage
 
 ```

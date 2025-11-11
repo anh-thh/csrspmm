@@ -3,6 +3,11 @@
 #include <cublas_v2.h>
 #include <iostream>
 
+#define cudaCheck(err) (cudaErrorCheck(err, __FILE__, __LINE__))
+#define cublasCheck(err) (cublasErrorCheck(err, __FILE__, __LINE__))
+#define ROUND_UP_TO_NEAREST(M, N) (((M) + (N)-1) / (N))
+
+
 inline void cudaErrorCheck(cudaError_t err, const char* file, int line) {
     if (err != cudaSuccess) {
         std::cerr << "CUDA Error: " << cudaGetErrorString(err)

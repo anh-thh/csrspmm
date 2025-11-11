@@ -18,7 +18,6 @@ int main() {
     float* recovered_dense = (float*) malloc(num_rows * num_cols * sizeof(float));
     csr2dense(csr_matrix, recovered_dense);
     // print_dense_matrix(recovered_dense, num_rows, num_cols);
-    
 
     bool are_equal = compare_dense_matrices(dense_matrix, recovered_dense, num_rows, num_cols);
     if (are_equal) {
