@@ -9,21 +9,13 @@
 enum Algo {
     cuSPARSELt = 0,
     naive,
+    naive_2d,
     warp_per_row,
     numAlgos
 };
 
 
-inline Algo parse_csr_algo(const std::string& name) {
-    if (name == "cuSPARSELt") return cuSPARSELt;
-    if (name == "naive")      return naive;
-    if (name == "warp_per_row") return warp_per_row;
-
-    std::cerr << "Error: unknown algorithm name '" << name << "'\n";
-    std::exit(1);
-}
-
-
+Algo parse_csr_algo(const std::string& name);
 
 // A[M,N] x B[N, K] => C[M, K]
 void run_csr_spmm(Algo algo,
@@ -43,6 +35,17 @@ __global__ void csr_spmm_naive(
     const int* __restrict__ A_col_idx, 
     const int* __restrict__ A_row_ptr, 
     const float* __restrict__ B, 
+    float* __restrict__ C);
+
+
+__global__ void csr_spmm_naive_2d(
+    int M, int N, int K,
+    float alpha,
+    float beta,
+    const float* __restrict__ A_values,
+    const int* __restrict__ A_col_idx,
+    const int* __restrict__ A_row_ptr,
+    const float* __restrict__ B,
     float* __restrict__ C);
 
 

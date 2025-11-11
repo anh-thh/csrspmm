@@ -4,12 +4,21 @@
 #include "helper.cuh"
 
 
+Algo parse_csr_algo(const std::string& name) {
+    if (name == "cuSPARSELt")   return cuSPARSELt;
+    if (name == "naive")        return naive;
+    if (name == "naive_2d")     return naive_2d;
+    if (name == "warp_per_row") return warp_per_row;
+
+    std::cerr << "Error: unknown algorithm name '" << name << "'\n";
+    std::exit(1);
+}
+
+
 /*
  * Sparse x Dense Matrix Multiplication
  * A[M, N] x B[N, K] => C[M, K]
  */
-
-
 void run_csr_spmm(Algo algo,
                   int M, int N, int K,
                   float alpha, float beta,
@@ -30,6 +39,20 @@ void run_csr_spmm(Algo algo,
         const dim3 blockDim(block_size);
 
         csr_spmm_naive<<<gridDim, blockDim>>>(M, N, K, 
+                                              alpha, beta,
+                                              A_values, 
+                                              A_col_idx,  
+                                              A_row_ptr,
+                                              B, C);
+        break;
+    }
+
+    case naive_2d: {
+        const int block_size = 32;
+        const dim3 gridDim(ROUND_UP_TO_NEAREST(K, block_size), ROUND_UP_TO_NEAREST(M, block_size));
+        const dim3 blockDim(block_size, block_size);
+
+        csr_spmm_naive_2d<<<gridDim, blockDim>>>(M, N, K, 
                                               alpha, beta,
                                               A_values, 
                                               A_col_idx,  
@@ -63,6 +86,8 @@ void run_csr_spmm(Algo algo,
 }
 
 
+
+
 __global__ void csr_spmm_naive(
     int M, int N, int K,
     float alpha, 
@@ -94,6 +119,34 @@ __global__ void csr_spmm_naive(
 
         C[row * K + n] = static_cast<float>(alpha * sum + beta * C[row * K + n]);
     }
+}
+
+__global__ void csr_spmm_naive_2d(
+    int M, int N, int K,
+    float alpha,
+    float beta,
+    const float* __restrict__ A_values,
+    const int* __restrict__ A_col_idx,
+    const int* __restrict__ A_row_ptr,
+    const float* __restrict__ B,
+    float* __restrict__ C)
+{
+    int row = blockIdx.y * blockDim.y + threadIdx.y;  // row in C
+    int col = blockIdx.x * blockDim.x + threadIdx.x;  // column in C
+
+    if (row >= M || col >= K) return;
+
+    int row_start = A_row_ptr[row];
+    int row_end   = A_row_ptr[row + 1];
+
+    float sum = 0.0f;
+    for (int j = row_start; j < row_end; ++j) {
+        int A_col   = A_col_idx[j];
+        float A_val = A_values[j];
+        sum        += A_val * __ldg(&B[A_col * K + col]);
+    }
+
+    C[row * K + col] = alpha * sum + beta * C[row * K + col];
 }
 
 
