@@ -6,6 +6,7 @@
 
 #define cudaCheck(err) (cudaErrorCheck(err, __FILE__, __LINE__))
 #define cublasCheck(err) (cublasErrorCheck(err, __FILE__, __LINE__))
+#define cusparseCheck(err) (cusparseErrorCheck(err, __FILE__, __LINE__))
 #define ROUND_UP_TO_NEAREST(M, N) (((M) + (N)-1) / (N))
 
 

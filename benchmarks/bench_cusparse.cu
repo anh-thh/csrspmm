@@ -1,18 +1,17 @@
 #include "helper.cuh"
 #include "csr_utils.cuh"
-#include "csr_spmm.cuh"
 #include "dense_utils.cuh"
+#include <cuda_runtime_api.h>
+#include <cusparse.h>
 #include <string>
 
 #define REPS 500
-
 
 int main (int argc, char** argv) {
     int M = 1024;
     float sparsity = 0.7;
     float alpha = 1.0f;
     float beta  = 0.5f;
-    std::string algo_str = "naive";  // default algorithm
 
     // parse args
     for (int i = 1; i < argc; ++i) {
@@ -26,12 +25,12 @@ int main (int argc, char** argv) {
             alpha = std::atof(argv[++i]);
         else if (arg == "-b" && i + 1 < argc)
             beta = std::atof(argv[++i]);
-        else if (arg == "-algo" && i + 1 < argc)
-            algo_str = argv[++i];
+        // else if (arg == "-algo" && i + 1 < argc)
+        //     algo_str = argv[++i];
         else if (arg == "-h" || arg == "--help") {
             std::cout << "Usage: " << argv[0]
-                      << " [-M <int>] [-s <float>] [-a <float>] [-b <float>] [-algo <string>]\n" 
-                      << "Example: ./bench_csr_spmm -M 16 -s 0.7 -a  -b 0.5 -algo warp_per_row\n";
+                      << " [-M <int>] [-s <float>] [-a <float>] [-b <float>]\n" 
+                      << "Example: ./bench_cusparse -M 16 -s 0.7 -a  -b 0.5\n";
             return 0;
         } else {
             std::cerr << "Unknown or incomplete flag: " << arg << std::endl;
@@ -40,7 +39,6 @@ int main (int argc, char** argv) {
     }
     
     
-    Algo algo = parse_csr_algo(algo_str);
     int N = M + 32;
     int K = N + 32;
     bool is_int = false;
@@ -79,15 +77,61 @@ int main (int argc, char** argv) {
     cudaCheck(cudaMemcpy(d_B, h_B, N * K * sizeof(float), cudaMemcpyHostToDevice));
     cudaCheck(cudaMemcpy(d_C, h_C, M * K * sizeof(float), cudaMemcpyHostToDevice));
 
+    
+    // ----------------------------------------------------------------------
+    //      cusparse setup
+    // ----------------------------------------------------------------------
+    cusparseHandle_t handle;
+    cusparseCheck(cusparseCreate(&handle));
+
+    cusparseSpMatDescr_t matA;
+    cusparseDnMatDescr_t matB, matC;
+
+    cusparseCheck(cusparseCreateCsr(
+        &matA,
+        M, N, A_csr.nnz,
+        (void*)d_A_csr.row_ptr,
+        (void*)d_A_csr.col_idx,
+        (void*)d_A_csr.values,
+        CUSPARSE_INDEX_32I,
+        CUSPARSE_INDEX_32I,
+        CUSPARSE_INDEX_BASE_ZERO,
+        CUDA_R_32F));
+
+    cusparseCheck(cusparseCreateDnMat(
+        &matB, N, K, K, (void*)d_B, CUDA_R_32F, CUSPARSE_ORDER_ROW));
+    cusparseCheck(cusparseCreateDnMat(
+        &matC, M, K, K, (void*)d_C, CUDA_R_32F, CUSPARSE_ORDER_ROW));
+
+    size_t bufferSize = 0;
+    void*  dBuffer    = nullptr;
+    cusparseCheck(cusparseSpMM_bufferSize(
+        handle,
+        CUSPARSE_OPERATION_NON_TRANSPOSE,   // opA
+        CUSPARSE_OPERATION_NON_TRANSPOSE,   // opB
+        &alpha,
+        matA, matB,
+        &beta,
+        matC,
+        CUDA_R_32F,
+        CUSPARSE_SPMM_ALG_DEFAULT,
+        &bufferSize));
+    if (bufferSize > 0) cudaCheck(cudaMalloc(&dBuffer, bufferSize));
+
 
     // warm up
     for (int i = 0; i < 10; ++i) {
-        run_csr_spmm(algo, M, N, K,
-                     alpha, beta, 
-                     d_A_csr.values,
-                     d_A_csr.col_idx,
-                     d_A_csr.row_ptr,
-                     d_B, d_C);
+        cusparseCheck(cusparseSpMM(
+            handle,
+            CUSPARSE_OPERATION_NON_TRANSPOSE,
+            CUSPARSE_OPERATION_NON_TRANSPOSE,
+            &alpha,
+            matA, matB,
+            &beta,
+            matC,
+            CUDA_R_32F,
+            CUSPARSE_SPMM_ALG_DEFAULT,
+            dBuffer));
     }
     cudaCheck(cudaDeviceSynchronize());
    
@@ -100,15 +144,19 @@ int main (int argc, char** argv) {
     cudaCheck(cudaEventCreate(&end));
 
     cudaCheck(cudaEventRecord(beg));
-    for (int j = 0; j < REPS; j++)
-    {
-        // runAlgo(algo, handle, m, n, k, alpha, dA, dB, beta, dC);
-        run_csr_spmm(algo, M, N, K,
-                     alpha, beta, 
-                     d_A_csr.values,
-                     d_A_csr.col_idx,
-                     d_A_csr.row_ptr,
-                     d_B, d_C);
+    for (int j = 0; j < REPS; j++) {
+        cusparseCheck(cusparseSpMM(
+            handle,
+            CUSPARSE_OPERATION_NON_TRANSPOSE,
+            CUSPARSE_OPERATION_NON_TRANSPOSE,
+            &alpha,
+            matA, matB,
+            &beta,
+            matC,
+            CUDA_R_32F,
+            CUSPARSE_SPMM_ALG_DEFAULT,
+            dBuffer));
+        cudaCheck(cudaDeviceSynchronize());
     }
 
     cudaCheck(cudaEventRecord(end));
@@ -121,8 +169,7 @@ int main (int argc, char** argv) {
 
     double flops = 2.0 * A_csr.nnz * K;  // NOTE: 2 ops per nonzero × K columns
     printf(
-        "%s krnl: avg elapsed time: (%7.6f) s, performance: (%7.2f) GFLOPS. size: [%u×%u×%u]\n",
-        algo_str.c_str(),
+        "cuSPARSE api: avg elapsed time: (%7.6f) s, performance: (%7.2f) GFLOPS. size: [%u×%u×%u]\n",
         elapsed_time / REPS,
         (REPS * flops * 1e-9) / elapsed_time,
         M, N, K);
@@ -131,12 +178,22 @@ int main (int argc, char** argv) {
     // ----------------------------------------------------------------------
     //      Clean up
     // ----------------------------------------------------------------------
+    cudaCheck(cudaEventDestroy(beg));
+    cudaCheck(cudaEventDestroy(end));
+
+    if (dBuffer) cudaCheck(cudaFree(dBuffer));
+    cusparseCheck(cusparseDestroySpMat(matA));
+    cusparseCheck(cusparseDestroyDnMat(matB));
+    cusparseCheck(cusparseDestroyDnMat(matC));
+    cusparseCheck(cusparseDestroy(handle));
+
     free(h_A);
     free(A_csr.row_ptr);
     free(A_csr.col_idx);
     free(A_csr.values);
     free(h_B);
     free(h_C);
+
     cudaCheck(cudaFree(d_A_csr.row_ptr));
     cudaCheck(cudaFree(d_A_csr.col_idx));
     cudaCheck(cudaFree(d_A_csr.values));

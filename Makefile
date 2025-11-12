@@ -20,7 +20,7 @@ SRCS     := $(abspath src/csr_spmm.cu \
 					  src/dense_utils.cu)
 INCLUDE  := $(abspath include)
 
-all: test_csr_utils test_csr_spmm bench_csr_spmm
+all: test_csr_utils test_csr_spmm bench_csr_spmm bench_cusparse
 
 
 test_csr_utils: $(SRCS) tests/test_csr_utils.cu
@@ -31,6 +31,9 @@ test_csr_spmm: $(SRCS) tests/test_csr_spmm.cu
 
 bench_csr_spmm: $(SRCS) benchmarks/bench_csr_spmm.cu
 	$(NVCC) $(CXXFLAGS) -I$(INCLUDE) $^ -o $@
+
+bench_cusparse: $(SRCS) benchmarks/bench_cusparse.cu
+	$(NVCC) $(CXXFLAGS) -lcusparse -I$(INCLUDE) $^ -o $@
 
 .PHONY: all clean
 
