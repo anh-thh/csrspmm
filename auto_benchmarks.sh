@@ -6,7 +6,7 @@ BENCHMARK_PROGRAM=./bench_csr_spmm
 SPARSITY=0.7
 # ALPHA=1.0
 BETA=0.5
-ALGO=naive_2d
+ALGO=naive
 
 # test 
 $TEST_PROGRAM -algo "$ALGO"
