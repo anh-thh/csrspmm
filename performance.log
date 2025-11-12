@@ -1,0 +1,37 @@
+anhthh@ThinkPad-P1-G7:~/Upenn/Fall25/cis6010_prj$ bash auto_benchmarks.sh 
+Pass: warp_per_row kernel result is correct!
+./bench_csr_spmm -M 8 -s 0.7 -a  -b 0.5 -algo warp_per_row
+Average elapsed time: (0.000028) s, performance: (   0.53) GFLOPS. size: [8×40×72]
+./bench_csr_spmm -M 16 -s 0.7 -a  -b 0.5 -algo warp_per_row
+Average elapsed time: (0.000030) s, performance: (   1.24) GFLOPS. size: [16×48×80]
+./bench_csr_spmm -M 32 -s 0.7 -a  -b 0.5 -algo warp_per_row
+Average elapsed time: (0.000036) s, performance: (   3.28) GFLOPS. size: [32×64×96]
+./bench_csr_spmm -M 64 -s 0.7 -a  -b 0.5 -algo warp_per_row
+Average elapsed time: (0.000053) s, performance: (   8.87) GFLOPS. size: [64×96×128]
+./bench_csr_spmm -M 128 -s 0.7 -a  -b 0.5 -algo warp_per_row
+Average elapsed time: (0.000084) s, performance: (  28.09) GFLOPS. size: [128×160×192]
+./bench_csr_spmm -M 256 -s 0.7 -a  -b 0.5 -algo warp_per_row
+Average elapsed time: (0.000282) s, performance: (  50.15) GFLOPS. size: [256×288×320]
+./bench_csr_spmm -M 512 -s 0.7 -a  -b 0.5 -algo warp_per_row
+Average elapsed time: (0.001538) s, performance: (  62.73) GFLOPS. size: [512×544×576]
+./bench_csr_spmm -M 1024 -s 0.7 -a  -b 0.5 -algo warp_per_row
+Average elapsed time: (0.015343) s, performance: (  45.99) GFLOPS. size: [1024×1056×1088]
+anhthh@ThinkPad-P1-G7:~/Upenn/Fall25/cis6010_prj$ bash auto_benchmarks.sh 
+Pass: naive kernel result is correct!
+./bench_csr_spmm -M 8 -s 0.7 -a  -b 0.5 -algo naive
+Average elapsed time: (0.000008) s, performance: (   1.95) GFLOPS. size: [8×40×72]
+./bench_csr_spmm -M 16 -s 0.7 -a  -b 0.5 -algo naive
+Average elapsed time: (0.000008) s, performance: (   4.61) GFLOPS. size: [16×48×80]
+./bench_csr_spmm -M 32 -s 0.7 -a  -b 0.5 -algo naive
+Average elapsed time: (0.000010) s, performance: (  12.09) GFLOPS. size: [32×64×96]
+./bench_csr_spmm -M 64 -s 0.7 -a  -b 0.5 -algo naive
+Average elapsed time: (0.000011) s, performance: (  42.95) GFLOPS. size: [64×96×128]
+./bench_csr_spmm -M 128 -s 0.7 -a  -b 0.5 -algo naive
+Average elapsed time: (0.000013) s, performance: ( 176.62) GFLOPS. size: [128×160×192]
+./bench_csr_spmm -M 256 -s 0.7 -a  -b 0.5 -algo naive
+Average elapsed time: (0.000038) s, performance: ( 375.80) GFLOPS. size: [256×288×320]
+./bench_csr_spmm -M 512 -s 0.7 -a  -b 0.5 -algo naive
+Average elapsed time: (0.000157) s, performance: ( 614.66) GFLOPS. size: [512×544×576]
+./bench_csr_spmm -M 1024 -s 0.7 -a  -b 0.5 -algo naive
+Average elapsed time: (0.001111) s, performance: ( 635.33) GFLOPS. size: [1024×1056×1088]
+
