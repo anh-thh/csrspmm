@@ -1,9 +1,19 @@
 #######################################################################################
 .PHONY: help
 help:
-	@echo "Makefile Usage:"
 	@echo ""
-	@echo "Run 'bear -- make all' to generate compile_commands.json, for clang-based tools."
+	@echo "Usage:"
+	@echo "  make <target>"
+	@echo ""
+	@echo "Targets:"
+	@echo "  all               Build all tests and benchmarks"
+	@echo "  test_csr_utils    Build CSR utils test"
+	@echo "  test_csr_spmm     Build CSR SpMM test"
+	@echo "  bench_csr_spmm    Benchmark custom CSR SpMM"
+	@echo "  bench_cusparse    Benchmark cuSPARSE"
+	@echo "  clean             Remove build outputs"
+	@echo ""
+	@echo "Tip: Run 'bear -- make all' to generate compile_commands.json"
 #######################################################################################
 
 # compiler settings
