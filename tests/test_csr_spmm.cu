@@ -92,6 +92,14 @@ int main (int argc, char** argv) {
     cudaCheck(cudaMalloc(&d_C, M * K * sizeof(float)));
     cudaCheck(cudaMemcpy(d_B, h_B, N * K * sizeof(float), cudaMemcpyHostToDevice));
     cudaCheck(cudaMemcpy(d_C, h_C, M * K * sizeof(float), cudaMemcpyHostToDevice));
+    
+
+    int A_max_row_nnz = 0;
+    for (int i = 0; i < M; i++) {
+        int nnz = A_csr.row_ptr[i+1] - A_csr.row_ptr[i];
+        A_max_row_nnz = std::max(A_max_row_nnz, nnz);
+    }
+
 
     run_csr_spmm(algo,
                  M, N, K,
@@ -99,6 +107,7 @@ int main (int argc, char** argv) {
                  d_A_csr.values,
                  d_A_csr.col_idx,
                  d_A_csr.row_ptr,
+                 A_max_row_nnz,
                  d_B, d_C);
    
     cudaCheck(cudaGetLastError());

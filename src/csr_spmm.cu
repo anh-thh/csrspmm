@@ -1,14 +1,16 @@
 #include <cuda_runtime.h>
 #include <vector_types.h>
+#include <vector>
 #include "csr_spmm.cuh"
 #include "csr_utils.cuh"
 #include "helper.cuh"
 
 
 Algo parse_csr_algo(const std::string& name) {
-    if (name == "cusparse")             return cusparse;
-    if (name == "naive")                return naive;
-    if (name == "warp_per_row")         return warp_per_row;
+    if (name == "cusparse")                     return cusparse;
+    if (name == "naive")                        return naive;
+    if (name == "warp_per_row")                 return warp_per_row;
+    if (name == "warp_per_row_sharemem")        return warp_per_row_sharemem;
 
     std::cerr << "Error: unknown algorithm name '" << name << "'\n";
     std::exit(1);
@@ -25,6 +27,7 @@ void run_csr_spmm(Algo algo,
                   float* A_values,
                   int* A_col_idx,
                   int* A_row_ptr,
+                  int A_max_row_nnz,
                   float *B, 
                   float *C) {
     switch (algo) {
@@ -58,6 +61,45 @@ void run_csr_spmm(Algo algo,
             A_values,
             A_col_idx,
             A_row_ptr,
+            B,
+            C
+        );
+        break;
+    }
+
+    case warp_per_row_sharemem: {
+        // Compute A_max_row_nnz on host (this is currently move to host code on test and benchmark file)
+        // std::vector<int> h_row_ptr(M+1);
+        // cudaMemcpy(h_row_ptr.data(), A_row_ptr,
+        //            sizeof(int)*(M+1),
+        //            cudaMemcpyDeviceToHost);
+        //
+        // int A_max_row_nnz = 0;
+        // for (int i = 0; i < M; i++) {
+        //     int nnz = h_row_ptr[i+1] - h_row_ptr[i];
+        //     A_max_row_nnz = std::max(A_max_row_nnz, nnz);
+        // }
+
+        const int warps_per_block = 4;     // 4 warps = 128 threads
+        const int threads_per_block = warps_per_block * WARP_SIZE;
+
+        size_t shmem_size =
+            (size_t)warps_per_block *
+            (size_t)A_max_row_nnz *
+            (sizeof(float) + sizeof(int));
+
+        int num_blocks = (M + warps_per_block - 1) / warps_per_block;
+
+        csr_spmm_warp_per_row_sharemem<<<
+            num_blocks,
+            threads_per_block,
+            shmem_size>>>(
+            M, N, K,
+            alpha, beta,
+            A_values,
+            A_col_idx,
+            A_row_ptr,
+            A_max_row_nnz,
             B,
             C
         );
@@ -142,7 +184,7 @@ void csr_spmm_warp_per_row(
         for (int j = row_start; j < row_end; j++) {
             float a = __ldg(&A_values[j]);
             int   c = __ldg(&A_col_idx[j]);
-            
+
             const float* B_row = B + c * K;
             sum += a * __ldg(&B_row[col]);
         }
@@ -151,6 +193,64 @@ void csr_spmm_warp_per_row(
         C[row * K + col] = alpha * sum + beta * old;
     }
 }
+
+
+__global__
+void csr_spmm_warp_per_row_sharemem(
+    int M, int N, int K,
+    float alpha, float beta,
+    const float* __restrict__ A_values,
+    const int*  __restrict__ A_col_idx,
+    const int*  __restrict__ A_row_ptr,
+    const int A_max_row_nnz,
+    const float* __restrict__ B,   
+    float* __restrict__ C)
+{
+    const int warps_per_block = blockDim.x / WARP_SIZE;
+    const int warp_in_block   = threadIdx.x / WARP_SIZE;
+    const int lane            = threadIdx.x % WARP_SIZE;
+
+    int row = blockIdx.x * warps_per_block + warp_in_block;
+    if (row >= M) return;
+
+    int row_start = A_row_ptr[row];
+    int row_end   = A_row_ptr[row + 1];
+    int row_nnz   = row_end - row_start;
+
+    // Shared memory layout per warp:
+    extern __shared__ unsigned char smem[];
+    size_t per_warp_stride = A_max_row_nnz * (sizeof(float) + sizeof(int));
+    unsigned char* warp_smem = smem + warp_in_block * per_warp_stride;
+
+    float* s_vals = reinterpret_cast<float*>(warp_smem);
+    int*   s_cols = reinterpret_cast<int*>(warp_smem + A_max_row_nnz * sizeof(float));
+
+    for (int i = lane; i < row_nnz; i += WARP_SIZE) {
+        s_vals[i] = A_values[row_start + i];
+        s_cols[i] = A_col_idx[row_start + i];
+    }
+    __syncwarp();
+
+    for (int col0 = 0; col0 < K; col0 += WARP_SIZE) {
+        int col = col0 + lane;
+        if (col < K) {
+
+            float sum = 0.0f;
+
+            for (int j = 0; j < row_nnz; j++) {
+                float a = s_vals[j];
+                int   c = s_cols[j];
+
+                sum += a * B[c * K + col];
+            }
+
+            float old = (beta != 0.0f ? C[row * K + col] : 0.0f);
+            C[row * K + col] = alpha * sum + beta * old;
+        }
+    }
+}
+
+
 
 
 

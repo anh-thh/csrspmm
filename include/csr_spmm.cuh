@@ -10,6 +10,7 @@ enum Algo {
     cusparse = 0,
     naive,
     warp_per_row,
+    warp_per_row_sharemem,
     numAlgos
 };
 
@@ -23,6 +24,7 @@ void run_csr_spmm(Algo algo,
                   float* A_values,
                   int* A_col_idx,
                   int* A_row_ptr,
+                  int A_A_max_row_nnz,
                   float *B, 
                   float *C);
 
@@ -45,6 +47,17 @@ __global__ void csr_spmm_warp_per_row(
     const float* __restrict__ A_values,
     const int*  __restrict__ A_col_idx,
     const int*  __restrict__ A_row_ptr,
+    const float* __restrict__ B,
+    float* __restrict__ C);
+
+__global__
+void csr_spmm_warp_per_row_sharemem(
+    int M, int N, int K,
+    float alpha, float beta,
+    const float* __restrict__ A_values,
+    const int*  __restrict__ A_col_idx,
+    const int*  __restrict__ A_row_ptr,
+    const int A_max_row_nnz,
     const float* __restrict__ B,
     float* __restrict__ C);
 
