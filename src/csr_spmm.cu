@@ -72,10 +72,9 @@ void run_csr_spmm(Algo algo,
         const int warps_per_block = 4;     // 4 warp
         const int threads_per_block = warps_per_block * WARP_SIZE;
 
-        size_t shmem_size =
-            (size_t)warps_per_block *
-            (size_t)A_max_row_nnz *
-            (sizeof(float) + sizeof(int));
+        size_t shmem_size = (size_t)warps_per_block *
+                            (size_t)A_max_row_nnz *
+                            (sizeof(float) + sizeof(int));
 
         int num_blocks = (M + warps_per_block - 1) / warps_per_block;
 
