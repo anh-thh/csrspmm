@@ -12,42 +12,54 @@
 #define cublasCheck(err) (cublasErrorCheck(err, __FILE__, __LINE__))
 
 
-int main(int argc, char** argv) {
-    std::string algo_str = "naive"; // default
-    if (argc > 1)
-        algo_str = argv[1];
+int main (int argc, char** argv) {
+    int M = 1024;
+    int N = 1024;
+    int K = 1024;
+    float sparsity = 0.7;
+    float alpha = 1.0f;
+    float beta  = 0.5f;
+    std::string algo_str = "naive";  // default algorithm
 
     // parse args
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
 
-        if (arg == "-algo" && i + 1 < argc)
-            algo_str = argv[++i];
+        if      ((arg == "-M") && i+1 < argc) M = std::atoi(argv[++i]);
+        else if ((arg == "-N") && i+1 < argc) N = std::atoi(argv[++i]);
+        else if ((arg == "-K") && i+1 < argc) K = std::atoi(argv[++i]);
+        else if ((arg == "-s") && i+1 < argc) sparsity = std::atof(argv[++i]);
+        else if ((arg == "-a") && i+1 < argc) alpha    = std::atof(argv[++i]);
+        else if ((arg == "-b") && i+1 < argc) beta     = std::atof(argv[++i]);
+        else if ((arg == "-algo") && i+1 < argc) algo_str = argv[++i];
+
         else if (arg == "-h" || arg == "--help") {
-            std::cout << "Usage: " << argv[0]
-                      << " [-algo <string>]\n"
-                      << "Example: ./bench_csr_spmm -algo warp_per_row\n";
+            std::cout <<
+                "Usage: " << argv[0] << " [options]\n"
+                "  -M <int>      number of rows of A (and C)\n"
+                "  -N <int>      number of columns of A\n"
+                "  -K <int>      number of columns of B (and C)\n"
+                "  -s <float>    sparsity (0.0 - 1.0)\n"
+                "  -a <float>    alpha scalar\n"
+                "  -b <float>    beta scalar\n"
+                "  -algo <str>   naive | warp_per_row | adaptive\n"
+                "Example:\n"
+                "  ./test_csr_spmm -M 4096 -N 4096 -K 256 -s 0.999 -algo warp_per_row\n";
             return 0;
-        } else {
+        }
+
+        else {
             std::cerr << "Unknown or incomplete flag: " << arg << std::endl;
             return 1;
         }
-    }
+    }    
 
 
     Algo algo = parse_csr_algo(algo_str);
-
-    int M = 1024;
-    int N = M + 32;
-    int K = N + 32;
-    float sparsity = 0.7;
     bool is_int = true;
 
     float min_val = -10.0f;
     float max_val = 10.0f;
-
-    float alpha = 1.0f;
-    float beta  = 0.0f;
     
     float dense2csr_tol = 0.0f;
     float cmp_tol = 1e-2f;
@@ -62,16 +74,6 @@ int main(int argc, char** argv) {
     
     CSRMatrix A_csr;
     dense2csr(h_A, M, N, A_csr, dense2csr_tol);
-
-    // // print
-    // std::cout << "A:" << std::endl;
-    // print_dense_matrix(h_A, M, K);
-    //
-    // std::cout << "A:" << std::endl;
-    // print_csr_matrix(A_csr);
-    //
-    // std::cout << "B:" << std::endl;
-    // print_dense_matrix(h_B, K, N);
 
     // Allocate device memory
     CSRMatrix d_A_csr;
@@ -118,7 +120,7 @@ int main(int argc, char** argv) {
     // print_dense_matrix(h_C_ref, M, N);
     
     // compare
-    bool correct = compare_dense_matrices(h_C_ref, h_C_gpu, M, N, cmp_tol);
+    bool correct = compare_dense_matrices(h_C_ref, h_C_gpu, M, K, cmp_tol);
     if (correct) {
         std::cout << "Pass: " << algo_str << " kernel result is correct!" << std::endl;
     } else {

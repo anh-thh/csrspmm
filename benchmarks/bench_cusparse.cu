@@ -9,6 +9,8 @@
 
 int main (int argc, char** argv) {
     int M = 1024;
+    int N = 1024;
+    int K = 1024;
     float sparsity = 0.7;
     float alpha = 1.0f;
     float beta  = 0.5f;
@@ -17,30 +19,34 @@ int main (int argc, char** argv) {
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
 
-        if (arg == "-M" && i + 1 < argc)
-            M = std::atoi(argv[++i]);
-        else if (arg == "-s" && i + 1 < argc)
-            sparsity = std::atof(argv[++i]);
-        else if (arg == "-a" && i + 1 < argc)
-            alpha = std::atof(argv[++i]);
-        else if (arg == "-b" && i + 1 < argc)
-            beta = std::atof(argv[++i]);
-        // else if (arg == "-algo" && i + 1 < argc)
-        //     algo_str = argv[++i];
+        if      ((arg == "-M") && i+1 < argc) M = std::atoi(argv[++i]);
+        else if ((arg == "-N") && i+1 < argc) N = std::atoi(argv[++i]);
+        else if ((arg == "-K") && i+1 < argc) K = std::atoi(argv[++i]);
+        else if ((arg == "-s") && i+1 < argc) sparsity = std::atof(argv[++i]);
+        else if ((arg == "-a") && i+1 < argc) alpha    = std::atof(argv[++i]);
+        else if ((arg == "-b") && i+1 < argc) beta     = std::atof(argv[++i]);
+
         else if (arg == "-h" || arg == "--help") {
-            std::cout << "Usage: " << argv[0]
-                      << " [-M <int>] [-s <float>] [-a <float>] [-b <float>]\n" 
-                      << "Example: ./bench_cusparse -M 16 -s 0.7 -a  -b 0.5\n";
+            std::cout <<
+                "Usage: " << argv[0] << " [options]\n"
+                "  -M <int>      number of rows of A (and C)\n"
+                "  -N <int>      number of columns of A\n"
+                "  -K <int>      number of columns of B (and C)\n"
+                "  -s <float>    sparsity (0.0 - 1.0)\n"
+                "  -a <float>    alpha scalar\n"
+                "  -b <float>    beta scalar\n"
+                "Example:\n"
+                "  ./bench_csr_cusparse -M 4096 -N 4096 -K 256 -s 0.999\n";
             return 0;
-        } else {
+        }
+
+        else {
             std::cerr << "Unknown or incomplete flag: " << arg << std::endl;
             return 1;
         }
-    }
+    }    
     
     
-    int N = M + 32;
-    int K = N + 32;
     bool is_int = false;
 
     float min_val = -10.0f;
