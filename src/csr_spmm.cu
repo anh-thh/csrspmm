@@ -18,7 +18,8 @@ Algo parse_csr_algo(const std::string& name) {
 
 
 /*
- * Sparse x Dense Matrix Multiplication
+ * Sparse x Dense Matrix Multiplication 
+ * Top-level function (assume input matrices ready on CUDA device)
  * A[M, N] x B[N, K] => C[M, K]
  */
 void run_csr_spmm(Algo algo,
@@ -105,8 +106,9 @@ void run_csr_spmm(Algo algo,
 
 
 /**
- * Each thread computes a single element C[row, col], finer-grained parallelism 
- * across both dimensions
+ * Each thread load full row of A and full column of B => produce one output entry of C
+ * finer-grained parallelism across both dimensions
+ * require 2D block and grid to run
  */
 __global__ 
 void csr_spmm_naive(
@@ -144,6 +146,7 @@ void csr_spmm_naive(
 /**
  * Each warp loads one sparse row of A and processes WARP_SIZE (32) columns of B.
  * Lane k (of the warp) computes output columns {k, k+32, k+64, ...}, producing C[row, lane::32].
+ * Only need 1D grid and block to run (energy consumption should be considered ??)
  */
 __global__
 void csr_spmm_warp_per_row(
@@ -183,6 +186,11 @@ void csr_spmm_warp_per_row(
 }
 
 
+/**
+ * Since all threads in a warp reuse the same A row, we stage its values and
+ * column indices in per-warp shared memory to reduce global memory traffic.
+ * All remaining logic follows the warp_per_row implementation.
+ */
 __global__
 void csr_spmm_warp_per_row_sharemem(
     int M, int N, int K,
