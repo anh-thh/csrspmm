@@ -4,7 +4,8 @@
 #include "dense_utils.cuh"
 #include <string>
 
-#define REPS 500
+#define WARMUP 200
+#define REPS 1000
 
 
 int main (int argc, char** argv) {
@@ -86,6 +87,7 @@ int main (int argc, char** argv) {
     cudaCheck(cudaMemcpy(d_B, h_B, N * K * sizeof(float), cudaMemcpyHostToDevice));
     cudaCheck(cudaMemcpy(d_C, h_C, M * K * sizeof(float), cudaMemcpyHostToDevice));
 
+    // NOTE: we can set this as one of the meta data of CSR matrix
     int A_max_row_nnz = 0;
     for (int i = 0; i < M; i++) {
         int nnz = A_csr.row_ptr[i+1] - A_csr.row_ptr[i];
@@ -93,7 +95,7 @@ int main (int argc, char** argv) {
     }
 
     // warm up
-    for (int i = 0; i < 10; ++i) {
+    for (int i = 0; i < WARMUP; ++i) {
         run_csr_spmm(algo, M, N, K,
                      alpha, beta, 
                      d_A_csr.values,
@@ -135,7 +137,7 @@ int main (int argc, char** argv) {
 
     double flops = 2.0 * A_csr.nnz * K;  // NOTE: 2 ops per nonzero × K columns
     printf(
-        "%s krnl: avg elapsed time: (%7.6f) s, performance: (%7.2f) GFLOPS. size: [%u×%u×%u]\n",
+        "%s krnl: avg elapsed time: (%7.6f) s, performance: (%7.2f) GFLOPS. size: [%u x %u x %u]\n",
         algo_str.c_str(),
         elapsed_time / REPS,
         (REPS * flops * 1e-9) / elapsed_time,

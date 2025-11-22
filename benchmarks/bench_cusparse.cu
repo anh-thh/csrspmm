@@ -5,7 +5,8 @@
 #include <cusparse.h>
 #include <string>
 
-#define REPS 500
+#define WARMUP 200
+#define REPS 1000
 
 int main (int argc, char** argv) {
     int M = 1024;
@@ -126,7 +127,7 @@ int main (int argc, char** argv) {
 
 
     // warm up
-    for (int i = 0; i < 10; ++i) {
+    for (int i = 0; i < WARMUP; ++i) {
         cusparseCheck(cusparseSpMM(
             handle,
             CUSPARSE_OPERATION_NON_TRANSPOSE,

@@ -50,8 +50,8 @@ void run_csr_spmm(Algo algo,
     }
 
     case warp_per_row: {
-        const int threads_per_block = 128;   // 4 warps
-        const int warps_per_block   = threads_per_block / 32;
+        const int warps_per_block = 4;     // 4 warp
+        const int threads_per_block = warps_per_block * WARP_SIZE;
 
         int num_blocks = (M + warps_per_block - 1) / warps_per_block;
 
@@ -68,19 +68,7 @@ void run_csr_spmm(Algo algo,
     }
 
     case warp_per_row_sharemem: {
-        // Compute A_max_row_nnz on host (this is currently move to host code on test and benchmark file)
-        // std::vector<int> h_row_ptr(M+1);
-        // cudaMemcpy(h_row_ptr.data(), A_row_ptr,
-        //            sizeof(int)*(M+1),
-        //            cudaMemcpyDeviceToHost);
-        //
-        // int A_max_row_nnz = 0;
-        // for (int i = 0; i < M; i++) {
-        //     int nnz = h_row_ptr[i+1] - h_row_ptr[i];
-        //     A_max_row_nnz = std::max(A_max_row_nnz, nnz);
-        // }
-
-        const int warps_per_block = 4;     // 4 warps = 128 threads
+        const int warps_per_block = 4;     // 4 warp
         const int threads_per_block = warps_per_block * WARP_SIZE;
 
         size_t shmem_size =
@@ -217,7 +205,7 @@ void csr_spmm_warp_per_row_sharemem(
     int row_end   = A_row_ptr[row + 1];
     int row_nnz   = row_end - row_start;
 
-    // Shared memory layout per warp:
+    // sharemem
     extern __shared__ unsigned char smem[];
     size_t per_warp_stride = A_max_row_nnz * (sizeof(float) + sizeof(int));
     unsigned char* warp_smem = smem + warp_in_block * per_warp_stride;
@@ -231,22 +219,19 @@ void csr_spmm_warp_per_row_sharemem(
     }
     __syncwarp();
 
-    for (int col0 = 0; col0 < K; col0 += WARP_SIZE) {
-        int col = col0 + lane;
-        if (col < K) {
+    for (int col = lane; col < K; col += WARP_SIZE) {
+        float sum = 0.0f;
 
-            float sum = 0.0f;
+        for (int j = 0; j < row_nnz; j++) {
+            float a = s_vals[j];
+            int   c = s_cols[j];
 
-            for (int j = 0; j < row_nnz; j++) {
-                float a = s_vals[j];
-                int   c = s_cols[j];
-
-                sum += a * B[c * K + col];
-            }
-
-            float old = (beta != 0.0f ? C[row * K + col] : 0.0f);
-            C[row * K + col] = alpha * sum + beta * old;
+            const float* B_row = B + c * K;
+            sum += a * __ldg(&B_row[col]);
         }
+
+        float old = (beta != 0.0f ? C[row * K + col] : 0.0f);
+        C[row * K + col] = alpha * sum + beta * old;
     }
 }
 
