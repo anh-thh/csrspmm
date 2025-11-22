@@ -28,7 +28,8 @@ void run_csr_spmm(Algo algo,
                   float *B, 
                   float *C);
 
-__global__ void csr_spmm_naive(
+__global__ 
+void csr_spmm_naive(
     int M, int N, int K,
     float alpha, 
     float beta, 
@@ -39,9 +40,10 @@ __global__ void csr_spmm_naive(
     float* __restrict__ C);
 
 
-
 #define WARP_SIZE 32
-__global__ void csr_spmm_warp_per_row(
+
+__global__ 
+void csr_spmm_warp_per_row(
     int M, int N, int K,
     float alpha, float beta,
     const float* __restrict__ A_values,
@@ -49,6 +51,17 @@ __global__ void csr_spmm_warp_per_row(
     const int*  __restrict__ A_row_ptr,
     const float* __restrict__ B,
     float* __restrict__ C);
+
+__global__
+void csr_spmm_warp_per_row_vec4(
+    int M, int N, int K,
+    float alpha, float beta,
+    const float* __restrict__ A_values,
+    const int*  __restrict__ A_col_idx,
+    const int*  __restrict__ A_row_ptr,
+    const float* __restrict__ __align__(16) B, // Assume B_col is 16-byte (float4) aligned
+    float* __restrict__ __align__(16) C);
+
 
 __global__
 void csr_spmm_warp_per_row_sharemem(

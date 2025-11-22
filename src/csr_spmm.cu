@@ -56,7 +56,7 @@ void run_csr_spmm(Algo algo,
 
         int num_blocks = (M + warps_per_block - 1) / warps_per_block;
 
-        csr_spmm_warp_per_row<<<num_blocks, threads_per_block>>>(
+        csr_spmm_warp_per_row_vec4<<<num_blocks, threads_per_block>>>(
             M, N, K,
             alpha, beta,
             A_values,
@@ -139,10 +139,10 @@ void csr_spmm_naive(
 
 
 
-#define WARP_SIZE 32
 /**
  * Each warp loads one sparse row of A and processes WARP_SIZE (32) columns of B.
- * Lane k (of the warp) computes output columns {k, k+32, k+64, ...}, producing C[row, lane::32].
+ * Lane k (of the warp) computes output columns {k, k+32, k+64, ...}
+ * => producing C[row, lane::32].
  * Only need 1D grid and block to run (energy consumption should be considered ??)
  */
 __global__
@@ -157,7 +157,47 @@ void csr_spmm_warp_per_row(
 {
     const int warps_per_block = blockDim.x / WARP_SIZE;
     const int warp_in_block   = threadIdx.x / WARP_SIZE;
-    const int lane            = threadIdx.x % WARP_SIZE;
+    const int lane            = lane_id();
+
+    int row = blockIdx.x * warps_per_block + warp_in_block;
+    if (row >= M) return;
+
+    int row_start = A_row_ptr[row];
+    int row_end   = A_row_ptr[row + 1];
+
+    // Each lane computes for columns: lane, lane+32, lane+64, ...
+    for (int col = lane; col < K; col += WARP_SIZE) {
+        float sum = 0.0f;
+
+        for (int j = row_start; j < row_end; j++) {
+            float a = __ldg(&A_values[j]);
+            int   c = __ldg(&A_col_idx[j]);
+
+            const float* B_row = B + c * K;
+            sum += a * __ldg(&B_row[col]);
+        }
+
+        float old = (beta != 0.0f) ? C[row * K + col] : 0.0f;
+        C[row * K + col] = alpha * sum + beta * old;
+    }
+}
+
+/**
+ * Vectorize warp_per_row implementation
+ */
+__global__
+void csr_spmm_warp_per_row_vec4(
+    int M, int N, int K,
+    float alpha, float beta,
+    const float* __restrict__ A_values,
+    const int*  __restrict__ A_col_idx,
+    const int*  __restrict__ A_row_ptr,
+    const float* __restrict__ __align__(16) B, // Assume B_col is 16-byte (float4) aligned
+    float* __restrict__ __align__(16) C)
+{
+    const int warps_per_block = blockDim.x / WARP_SIZE;
+    const int warp_in_block   = threadIdx.x / WARP_SIZE;
+    const int lane            = lane_id();
 
     int row = blockIdx.x * warps_per_block + warp_in_block;
     if (row >= M) return;
@@ -166,21 +206,18 @@ void csr_spmm_warp_per_row(
     int row_end   = A_row_ptr[row + 1];
 
     const int K_vec = K / 4;     // # of full float4 segments
-    const int K_tail = K % 4;     // tail columns
-
     float4* Crow4 = reinterpret_cast<float4*>(C + row * K);
 
-    // Each lane computes vectors at indices lane, lane+WARP_SIZE, lane+2*WARP_SIZE, ...
-    // Each vector = 4 output columns.
-    main_vetorized_loop: for (int col4 = lane; col4 < K_vec; col4 += WARP_SIZE) {
+    for (int col4 = lane; col4 < K_vec; col4 += WARP_SIZE) {
+
         float4 acc = make_float4(0,0,0,0);
 
         for (int j = row_start; j < row_end; j++) {
-            float a = __ldg(&A_values[j]);
-            int   c = __ldg(&A_col_idx[j]);
+            float  a = A_values[j];
+            int    c = A_col_idx[j];
 
             const float4* Brow4 = reinterpret_cast<const float4*>(B + c * K);
-            float4 b = __ldg(&Brow4[col4]);
+            float4 b = Brow4[col4];
 
             acc.x += a * b.x;
             acc.y += a * b.y;
@@ -188,32 +225,19 @@ void csr_spmm_warp_per_row(
             acc.w += a * b.w;
         }
 
-        float4 old = make_float4(0,0,0,0);
-        if (beta != 0.0f)
-            old = Crow4[col4];
-
-        Crow4[col4] = make_float4(
-            alpha*acc.x + beta*old.x,
-            alpha*acc.y + beta*old.y,
-            alpha*acc.z + beta*old.z,
-            alpha*acc.w + beta*old.w
-        );
-    }
-
-    if (K_tail != 0) {
-        int base_col = K_vec * 4;     // tail column
-
-        for (int col = base_col + lane; col < K; col += WARP_SIZE) {
-            float sum = 0.f;
-
-            for (int j = row_start; j < row_end; j++) {
-                float a = __ldg(&A_values[j]);
-                int   c = __ldg(&A_col_idx[j]);
-                sum += a * __ldg(&B[c*K + col]);
-            }
-
-            float old = (beta != 0.0f ? C[row*K + col] : 0.0f);
-            C[row*K + col] = alpha * sum + beta * old;
+        if (beta != 0.f) {
+            float4 o = Crow4[col4];
+            Crow4[col4] = make_float4(
+                alpha*acc.x + beta*o.x,
+                alpha*acc.y + beta*o.y,
+                alpha*acc.z + beta*o.z,
+                alpha*acc.w + beta*o.w
+            );
+        } else {
+            Crow4[col4] = make_float4(
+                alpha*acc.x, alpha*acc.y,
+                alpha*acc.z, alpha*acc.w
+            );
         }
     }
 }
@@ -237,7 +261,7 @@ void csr_spmm_warp_per_row_sharemem(
 {
     const int warps_per_block = blockDim.x / WARP_SIZE;
     const int warp_in_block   = threadIdx.x / WARP_SIZE;
-    const int lane            = threadIdx.x % WARP_SIZE;
+    const int lane            = lane_id();
 
     int row = blockIdx.x * warps_per_block + warp_in_block;
     if (row >= M) return;

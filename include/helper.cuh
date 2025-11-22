@@ -32,3 +32,10 @@ static inline void cusparseErrorCheck(cusparseStatus_t status, const char* file,
         std::exit(EXIT_FAILURE);
     }
 }
+
+__device__ __forceinline__ int lane_id()
+{
+    int id;
+    asm("mov.u32 %0, %%laneid;" : "=r"(id));
+    return id;
+}
