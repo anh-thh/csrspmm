@@ -62,8 +62,7 @@ void run_csr_spmm(Algo algo,
             A_values,
             A_col_idx,
             A_row_ptr,
-            B,
-            C
+            B, C
         );
         break;
     }
@@ -88,8 +87,7 @@ void run_csr_spmm(Algo algo,
             A_col_idx,
             A_row_ptr,
             A_max_row_nnz,
-            B,
-            C
+            B, C
         );
         break;
     }
