@@ -1,15 +1,14 @@
-#include "helper.cuh"
-#include <cuda_runtime.h>
-#include "csr_utils.cuh"
-#include "csr_spmm.cuh"
-#include "dense_utils.cuh"
-#include "dense_gemm.cuh"
+#include <string>
 #include <cstdlib>
+#include <cstring>
 #include <cuda_runtime_api.h>
 #include <iostream>
 
-#define cudaCheck(err) (cudaErrorCheck(err, __FILE__, __LINE__))
-#define cublasCheck(err) (cublasErrorCheck(err, __FILE__, __LINE__))
+#include <csrspmm/matrix.h>
+#include <csrspmm/csr_utils.h>
+#include <csrspmm/dense_utils.h>
+#include <csrspmm/csrspmm.h>
+#include <csrspmm/error_check.h>
 
 
 int main (int argc, char** argv) {
@@ -55,7 +54,7 @@ int main (int argc, char** argv) {
     }    
 
 
-    Algo algo = parse_csr_algo(algo_str);
+    csrspmm::Algorithm algo = csrspmm::parse_algorithm(algo_str);
     bool is_int = true;
 
     float min_val = -10.0f;
@@ -65,63 +64,40 @@ int main (int argc, char** argv) {
     float cmp_tol = 1e-2f;
 
     // Generate A, B and C
-    float* h_A = (float*)malloc(M * N * sizeof(float));
-    float* h_B = (float*)malloc(N * K * sizeof(float));
-    float* h_C = (float*)malloc(M * K * sizeof(float));
-    init_random_dense_matrix(h_A, M, N, min_val, max_val, sparsity, is_int);
-    init_random_dense_matrix(h_B, N, K, min_val, max_val, 0.0f, is_int);
-    init_random_dense_matrix(h_C, M, K, min_val, max_val, 0.0f, is_int);
+    csrspmm::DenseMatrix hA, hB, hC;
+
+    csrspmm::dense_alloc_host(hA, M, N);
+    csrspmm::dense_alloc_host(hB, N, K);
+    csrspmm::dense_alloc_host(hC, M, K);
     
-    CSRMatrix A_csr;
-    dense2csr(h_A, M, N, A_csr, dense2csr_tol);
+    csrspmm::dense_init_random(hA, -10.f, 10.f, sparsity, true);
+    csrspmm::dense_init_random(hB, -10.f, 10.f, 0.0f, true);
+    csrspmm::dense_init_random(hC, -10.f, 10.f, 0.0f, true);
+
+    csrspmm::CSRMatrix hA_CSR;
+    csrspmm::dense2csr(hA, hA_CSR, 0.0f);
 
     // Allocate device memory
-    CSRMatrix d_A_csr;
-    cudaCheck(cudaMalloc(&d_A_csr.values,  A_csr.nnz * sizeof(float)));
-    cudaCheck(cudaMalloc(&d_A_csr.col_idx, A_csr.nnz * sizeof(int)));
-    cudaCheck(cudaMalloc(&d_A_csr.row_ptr, (A_csr.num_rows + 1) * sizeof(int)));
-    cudaCheck(cudaMemcpy(d_A_csr.values,  A_csr.values,  
-                         A_csr.nnz * sizeof(float), cudaMemcpyHostToDevice));
-    cudaCheck(cudaMemcpy(d_A_csr.col_idx, A_csr.col_idx, 
-                         A_csr.nnz * sizeof(int),   cudaMemcpyHostToDevice));
-    cudaCheck(cudaMemcpy(d_A_csr.row_ptr, A_csr.row_ptr, 
-                        (A_csr.num_rows + 1) * sizeof(int), cudaMemcpyHostToDevice));
+    csrspmm::CSRMatrix dA_CSR;
+    csrspmm::csr_host2device(hA_CSR, dA_CSR);
 
-    float *d_B, *d_C;
-    cudaCheck(cudaMalloc(&d_B, N * K * sizeof(float)));
-    cudaCheck(cudaMalloc(&d_C, M * K * sizeof(float)));
-    cudaCheck(cudaMemcpy(d_B, h_B, N * K * sizeof(float), cudaMemcpyHostToDevice));
-    cudaCheck(cudaMemcpy(d_C, h_C, M * K * sizeof(float), cudaMemcpyHostToDevice));
-    
+    csrspmm::DenseMatrix dB, dC;
+    csrspmm::dense_host2device(hB, dB);
+    csrspmm::dense_host2device(hC, dC);
 
-    int A_max_row_nnz = 0;
-    for (int i = 0; i < M; i++) {
-        int nnz = A_csr.row_ptr[i+1] - A_csr.row_ptr[i];
-        A_max_row_nnz = std::max(A_max_row_nnz, nnz);
-    }
-
-
-    run_csr_spmm(algo,
-                 M, N, K,
-                 alpha, beta,
-                 d_A_csr.values,
-                 d_A_csr.col_idx,
-                 d_A_csr.row_ptr,
-                 A_max_row_nnz,
-                 d_B, d_C);
+    csrspmm::spmm(dA_CSR, dB, dC, alpha, beta, algo);
+    // cudaCheck(cudaGetLastError());
+    // cudaCheck(cudaDeviceSynchronize());
    
-    cudaCheck(cudaGetLastError());
-    cudaCheck(cudaDeviceSynchronize());
-    
-
     // Copy result back to host
-    float* h_C_gpu = (float*)malloc(M * K * sizeof(float));
-    cudaCheck(cudaMemcpy(h_C_gpu, d_C, M * K * sizeof(float), cudaMemcpyDeviceToHost));
-
-    // cpu reference
-    float* h_C_ref = (float*)malloc(M * K * sizeof(float));
-    memcpy(h_C_ref, h_C, M * K * sizeof(float));
-    dense_gemm_cpu(M, N, K, alpha, beta, h_A, h_B, h_C_ref);
+    csrspmm::DenseMatrix hC_gpu;
+    csrspmm::dense_device2host(dC, hC_gpu);
+    
+    // cpu refernce 
+    csrspmm::DenseMatrix hC_ref;
+    csrspmm::dense_alloc_host(hC_ref, M, K);
+    std::memcpy(hC_ref.data, hC.data, sizeof(float) * M * K);
+    csrspmm::dense_gemm_cpu(M, N, K, alpha, beta, hA, hB, hC_ref);
 
     // std::cout << "C_gpu:" << std::endl;
     // print_dense_matrix(h_C_gpu, M, N);
@@ -129,7 +105,7 @@ int main (int argc, char** argv) {
     // print_dense_matrix(h_C_ref, M, N);
     
     // compare
-    bool correct = compare_dense_matrices(h_C_ref, h_C_gpu, M, K, cmp_tol);
+    bool correct = csrspmm::dense_compare(hC_gpu, hC_ref, cmp_tol);
     if (correct) {
         std::cout << "Pass: " << algo_str << " kernel result is correct!" << std::endl;
     } else {
@@ -137,19 +113,17 @@ int main (int argc, char** argv) {
     }
 
     // free memory
-    free(h_A);
-    free(A_csr.row_ptr);
-    free(A_csr.col_idx);
-    free(A_csr.values);
-    free(h_B);
-    free(h_C);
-    free(h_C_gpu);
-    free(h_C_ref);
-    cudaCheck(cudaFree(d_A_csr.row_ptr));
-    cudaCheck(cudaFree(d_A_csr.col_idx));
-    cudaCheck(cudaFree(d_A_csr.values));
-    cudaCheck(cudaFree(d_B));
-    cudaCheck(cudaFree(d_C));
-    
+    csrspmm::dense_free_host(hA);
+    csrspmm::dense_free_host(hB);
+    csrspmm::dense_free_host(hC);
+    csrspmm::dense_free_host(hC_gpu);
+    csrspmm::dense_free_host(hC_ref);
+
+    csrspmm::csr_free_host(hA_CSR);
+    csrspmm::csr_free_device(dA_CSR);
+
+    csrspmm::dense_free_device(dB);
+    csrspmm::dense_free_device(dC);
+
     return 0;
 }
