@@ -165,20 +165,56 @@ void csr_spmm_warp_per_row(
     int row_start = A_row_ptr[row];
     int row_end   = A_row_ptr[row + 1];
 
-    // Each lane computes for columns: lane, lane+32, lane+64, ...
-    for (int col = lane; col < K; col += WARP_SIZE) {
-        float sum = 0.0f;
+    const int K_vec = K / 4;     // # of full float4 segments
+    const int K_tail = K % 4;     // tail columns
+
+    float4* Crow4 = reinterpret_cast<float4*>(C + row * K);
+
+    // Each lane computes vectors at indices lane, lane+WARP_SIZE, lane+2*WARP_SIZE, ...
+    // Each vector = 4 output columns.
+    main_vetorized_loop: for (int col4 = lane; col4 < K_vec; col4 += WARP_SIZE) {
+        float4 acc = make_float4(0,0,0,0);
 
         for (int j = row_start; j < row_end; j++) {
             float a = __ldg(&A_values[j]);
             int   c = __ldg(&A_col_idx[j]);
 
-            const float* B_row = B + c * K;
-            sum += a * __ldg(&B_row[col]);
+            const float4* Brow4 = reinterpret_cast<const float4*>(B + c * K);
+            float4 b = __ldg(&Brow4[col4]);
+
+            acc.x += a * b.x;
+            acc.y += a * b.y;
+            acc.z += a * b.z;
+            acc.w += a * b.w;
         }
 
-        float old = (beta != 0.0f) ? C[row * K + col] : 0.0f;
-        C[row * K + col] = alpha * sum + beta * old;
+        float4 old = make_float4(0,0,0,0);
+        if (beta != 0.0f)
+            old = Crow4[col4];
+
+        Crow4[col4] = make_float4(
+            alpha*acc.x + beta*old.x,
+            alpha*acc.y + beta*old.y,
+            alpha*acc.z + beta*old.z,
+            alpha*acc.w + beta*old.w
+        );
+    }
+
+    if (K_tail != 0) {
+        int base_col = K_vec * 4;     // tail column
+
+        for (int col = base_col + lane; col < K; col += WARP_SIZE) {
+            float sum = 0.f;
+
+            for (int j = row_start; j < row_end; j++) {
+                float a = __ldg(&A_values[j]);
+                int   c = __ldg(&A_col_idx[j]);
+                sum += a * __ldg(&B[c*K + col]);
+            }
+
+            float old = (beta != 0.0f ? C[row*K + col] : 0.0f);
+            C[row*K + col] = alpha * sum + beta * old;
+        }
     }
 }
 
