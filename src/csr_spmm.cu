@@ -78,7 +78,8 @@ void run_csr_spmm(Algo algo,
  * Each thread computes a single element C[row, col], finer-grained parallelism 
  * across both dimensions
  */
-__global__ void csr_spmm_naive(
+__global__ 
+void csr_spmm_naive(
     int M, int N, int K,
     float alpha,
     float beta,
@@ -110,7 +111,10 @@ __global__ void csr_spmm_naive(
 
 
 #define WARP_SIZE 32
-
+/**
+ * Each warp loads one sparse row of A and processes WARP_SIZE (32) columns of B.
+ * Lane k (of the warp) computes output columns {k, k+32, k+64, ...}, producing C[row, lane::32].
+ */
 __global__
 void csr_spmm_warp_per_row(
     int M, int N, int K,
@@ -136,10 +140,11 @@ void csr_spmm_warp_per_row(
         float sum = 0.0f;
 
         for (int j = row_start; j < row_end; j++) {
-            float a = A_values[j];
-            int   c = A_col_idx[j];
-
-            sum += a * B[c * K + col];
+            float a = __ldg(&A_values[j]);
+            int   c = __ldg(&A_col_idx[j]);
+            
+            const float* B_row = B + c * K;
+            sum += a * __ldg(&B_row[col]);
         }
 
         float old = (beta != 0.0f) ? C[row * K + col] : 0.0f;
