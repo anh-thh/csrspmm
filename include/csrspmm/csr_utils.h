@@ -3,9 +3,6 @@
 
 namespace csrspmm {
 
-// ============================================================================
-// Host-side utilities for CSR and Dense matrices
-// ============================================================================
 void csr_alloc_host(CSRMatrix& csr, int height, int width, int nnz);
 void csr_free_host(CSRMatrix& csr);
 
