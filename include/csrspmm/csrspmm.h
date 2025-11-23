@@ -12,6 +12,7 @@ enum class Algorithm {
     WarpPerRow,
     WarpPerRowFp4,
     WarpPerRowSmem,
+    WarpPerRowSmemFp4
 };
 
 Algorithm parse_algorithm(const std::string& name);
@@ -23,7 +24,7 @@ Algorithm parse_algorithm(const std::string& name);
  * B: Dense (N x K)
  * C: Dense (N x K)
  * alpha, beta: float
- * Algo: choose kernel variant
+ * Algo: kernel variant
  */
 void spmm(const CSRMatrix& A,
           const DenseMatrix& B,

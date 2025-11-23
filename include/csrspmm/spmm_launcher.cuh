@@ -29,5 +29,12 @@ void launch_warp_per_row_smem(const CSRMatrix& A,
                                   float alpha,
                                   float beta);
 
+
+void launch_warp_per_row_smem_fp4(const CSRMatrix& A,
+                                  const DenseMatrix& B,
+                                  DenseMatrix& C,
+                                  float alpha,
+                                  float beta);
+
 } // namespace csrspmm
 

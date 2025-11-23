@@ -75,7 +75,7 @@ int main (int argc, char** argv) {
     csrspmm::dense_init_random(hC, min_val, max_val, 0.0f, true);
 
     csrspmm::CSRMatrix hA_CSR;
-    csrspmm::dense2csr(hA, hA_CSR, 0.0f);
+    csrspmm::dense2csr(hA, hA_CSR, dense2csr_tol);
 
     // Allocate device memory
     csrspmm::CSRMatrix dA_CSR;
