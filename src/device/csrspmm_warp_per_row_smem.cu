@@ -38,7 +38,7 @@ void csrspmm_warp_per_row_smem(
     float* s_vals = reinterpret_cast<float*>(warp_smem);
     int*   s_cols = reinterpret_cast<int*>(warp_smem + A_max_row_nnz * sizeof(float));
     
-    // By buffering to sharemem, we reduce __global__ memory access by WARP_SIZE times
+    // By buffering to sharemem, we reduce __global__ memory access (of a thread) by WARP_SIZE times
     for (int i = lane; i < row_nnz; i += WARP_SIZE) {
         s_vals[i] = A_values[row_start + i];
         s_cols[i] = A_col_idx[row_start + i];
