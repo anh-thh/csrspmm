@@ -11,7 +11,7 @@ namespace csrspmm::kernel {
  * Only need 1D grid and block to run (energy consumption should be considered ??)
  */
 __global__
-void csr_spmm_warp_per_row(
+void csrspmm_warp_per_row(
     int M, int N, int K,
     float alpha, float beta,
     const float* __restrict__ A_values,

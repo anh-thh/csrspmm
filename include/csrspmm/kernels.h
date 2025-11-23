@@ -4,7 +4,7 @@
 namespace csrspmm::kernel {
 
 __global__ 
-void csr_spmm_naive(
+void csrspmm_naive(
     int M, int N, int K,
     float alpha,
     float beta,
@@ -15,7 +15,7 @@ void csr_spmm_naive(
     float* __restrict__ C);
 
 __global__
-void csr_spmm_warp_per_row(
+void csrspmm_warp_per_row(
     int M, int N, int K,
     float alpha, float beta,
     const float* __restrict__ A_values,
@@ -26,7 +26,7 @@ void csr_spmm_warp_per_row(
 
 
 __global__
-void csr_spmm_warp_per_row_vec4(
+void csrspmm_warp_per_row_fp4(
     int M, int N, int K,
     float alpha, float beta,
     const float* __restrict__ A_values,
@@ -37,7 +37,7 @@ void csr_spmm_warp_per_row_vec4(
 
 
 __global__
-void csr_spmm_warp_per_row_sharemem(
+void csrspmm_warp_per_row_smem(
     int M, int N, int K,
     float alpha, float beta,
     const float* __restrict__ A_values,

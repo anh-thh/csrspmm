@@ -10,8 +10,8 @@ namespace csrspmm {
 enum class Algorithm {
     Naive,
     WarpPerRow,
-    WarpPerRowVec4,
-    WarpPerRowSharemem,
+    WarpPerRowFp4,
+    WarpPerRowSmem,
 };
 
 Algorithm parse_algorithm(const std::string& name);

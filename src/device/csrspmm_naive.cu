@@ -9,7 +9,7 @@ namespace csrspmm::kernel {
  * require 2D block and grid to run
  */
 __global__ 
-void csr_spmm_naive(
+void csrspmm_naive(
     int M, int N, int K,
     float alpha,
     float beta,

@@ -7,7 +7,7 @@ namespace csrspmm::kernel {
  * Vectorize warp_per_row implementation
  */
 __global__
-void csr_spmm_warp_per_row_vec4(
+void csrspmm_warp_per_row_fp4(
     int M, int N, int K,
     float alpha, float beta,
     const float* __restrict__ A_values,

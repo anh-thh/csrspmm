@@ -14,8 +14,8 @@ Algorithm parse_algorithm(const std::string& name)
 {
     if (name == "Naive")                return Algorithm::Naive;
     if (name == "WarpPerRow")           return Algorithm::WarpPerRow;
-    if (name == "WarpPerRowVec4")       return Algorithm::WarpPerRowVec4;
-    if (name == "WarpPerRowSharemem")   return Algorithm::WarpPerRowSharemem;
+    if (name == "WarpPerRowFp4")        return Algorithm::WarpPerRowFp4;
+    if (name == "WarpPerRowSmem")   return Algorithm::WarpPerRowSmem;
 
     std::cerr << "[csrspmm] Unknown algorithm: " << name
               << ", using Naive\n";
@@ -47,12 +47,12 @@ void spmm(const CSRMatrix& A,
             launch_warp_per_row(A, B, C, alpha, beta);
             break;
 
-        case Algorithm::WarpPerRowVec4:
-            launch_warp_per_row_vec4(A, B, C, alpha, beta);
+        case Algorithm::WarpPerRowFp4:
+            launch_warp_per_row_fp4(A, B, C, alpha, beta);
             break;
 
-        case Algorithm::WarpPerRowSharemem:
-            launch_warp_per_row_sharemem(A, B, C, alpha, beta);
+        case Algorithm::WarpPerRowSmem:
+            launch_warp_per_row_smem(A, B, C, alpha, beta);
             break;
 
         default:

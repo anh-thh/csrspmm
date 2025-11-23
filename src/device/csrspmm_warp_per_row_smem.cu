@@ -9,7 +9,7 @@ namespace csrspmm::kernel {
  * All remaining logic follows the warp_per_row implementation.
  */
 __global__
-void csr_spmm_warp_per_row_sharemem(
+void csrspmm_warp_per_row_smem(
     int M, int N, int K,
     float alpha, float beta,
     const float* __restrict__ A_values,

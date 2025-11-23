@@ -15,7 +15,7 @@ void launch_naive(const CSRMatrix& A,
     dim3 grid((B.width  + block.x - 1) / block.x,
               (A.height + block.y - 1) / block.y);
 
-    kernel::csr_spmm_naive<<<grid, block>>>(
+    kernel::csrspmm_naive<<<grid, block>>>(
         A.height,
         A.width,
         B.width,
@@ -39,7 +39,7 @@ void launch_warp_per_row(const CSRMatrix& A,
 
     int num_blocks = (A.height + warps_per_block - 1) / warps_per_block;
 
-    kernel::csr_spmm_warp_per_row<<<num_blocks, threads_per_block>>>(
+    kernel::csrspmm_warp_per_row<<<num_blocks, threads_per_block>>>(
         A.height,
         A.width,
         B.width,
@@ -52,7 +52,7 @@ void launch_warp_per_row(const CSRMatrix& A,
     );
 }
 
-void launch_warp_per_row_vec4(const CSRMatrix& A,
+void launch_warp_per_row_fp4(const CSRMatrix& A,
                               const DenseMatrix& B,
                               DenseMatrix& C,
                               float alpha,
@@ -63,7 +63,7 @@ void launch_warp_per_row_vec4(const CSRMatrix& A,
 
     int num_blocks = (A.height + warps_per_block - 1) / warps_per_block;
 
-    kernel::csr_spmm_warp_per_row_vec4<<<num_blocks, threads_per_block>>>(
+    kernel::csrspmm_warp_per_row_fp4<<<num_blocks, threads_per_block>>>(
         A.height,
         A.width,
         B.width,
@@ -77,7 +77,7 @@ void launch_warp_per_row_vec4(const CSRMatrix& A,
 }
 
 
-void launch_warp_per_row_sharemem(const CSRMatrix& A,
+void launch_warp_per_row_smem(const CSRMatrix& A,
                                   const DenseMatrix& B,
                                   DenseMatrix& C,
                                   float alpha,
@@ -93,7 +93,7 @@ void launch_warp_per_row_sharemem(const CSRMatrix& A,
 
     int num_blocks = (A.height + warps_per_block - 1) / warps_per_block;
 
-    kernel::csr_spmm_warp_per_row_sharemem<<<
+    kernel::csrspmm_warp_per_row_smem<<<
         num_blocks,
         threads_per_block,
         shmem_size>>>(
