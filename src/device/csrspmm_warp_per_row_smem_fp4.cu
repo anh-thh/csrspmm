@@ -73,8 +73,10 @@ void csrspmm_warp_per_row_smem_fp4(
             );
         } else {
             Crow4[col4] = make_float4(
-                alpha*acc.x, alpha*acc.y,
-                alpha*acc.z, alpha*acc.w
+                alpha*acc.x, 
+                alpha*acc.y,
+                alpha*acc.z, 
+                alpha*acc.w
             );
         }
     }
