@@ -18,7 +18,7 @@ int main (int argc, char** argv) {
     float sparsity = 0.7;
     float alpha = 1.0f;
     float beta  = 0.5f;
-    std::string algo_str = "naive";  // default algorithm
+    std::string algo_str = "Naive";  // default algorithm
 
     // parse args
     for (int i = 1; i < argc; ++i) {
@@ -43,7 +43,7 @@ int main (int argc, char** argv) {
                 "  -b <float>    beta scalar\n"
                 "  -algo <str>   naive | warp_per_row | adaptive\n"
                 "Example:\n"
-                "  ./test_csr_spmm -M 4096 -N 4096 -K 256 -s 0.999 -algo warp_per_row\n";
+                "  ./test_csr_spmm -M 4096 -N 4096 -K 256 -s 0.999 -algo WarpPerRow\n";
             return 0;
         }
 
@@ -70,9 +70,9 @@ int main (int argc, char** argv) {
     csrspmm::dense_alloc_host(hB, N, K);
     csrspmm::dense_alloc_host(hC, M, K);
     
-    csrspmm::dense_init_random(hA, -10.f, 10.f, sparsity, true);
-    csrspmm::dense_init_random(hB, -10.f, 10.f, 0.0f, true);
-    csrspmm::dense_init_random(hC, -10.f, 10.f, 0.0f, true);
+    csrspmm::dense_init_random(hA, min_val, max_val, sparsity, is_int);
+    csrspmm::dense_init_random(hB, min_val, max_val, 0.0f, true);
+    csrspmm::dense_init_random(hC, min_val, max_val, 0.0f, true);
 
     csrspmm::CSRMatrix hA_CSR;
     csrspmm::dense2csr(hA, hA_CSR, 0.0f);
@@ -118,10 +118,8 @@ int main (int argc, char** argv) {
     csrspmm::dense_free_host(hC);
     csrspmm::dense_free_host(hC_gpu);
     csrspmm::dense_free_host(hC_ref);
-
     csrspmm::csr_free_host(hA_CSR);
     csrspmm::csr_free_device(dA_CSR);
-
     csrspmm::dense_free_device(dB);
     csrspmm::dense_free_device(dC);
 

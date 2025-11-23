@@ -14,8 +14,8 @@ Algorithm parse_algorithm(const std::string& name)
 {
     if (name == "Naive")                return Algorithm::Naive;
     if (name == "WarpPerRow")           return Algorithm::WarpPerRow;
-    if (name == "WarpPerRowVec4")       return Algorithm::WarpPerRow;
-    if (name == "WarpPerRowSharemem")   return Algorithm::WarpPerRow;
+    if (name == "WarpPerRowVec4")       return Algorithm::WarpPerRowVec4;
+    if (name == "WarpPerRowSharemem")   return Algorithm::WarpPerRowSharemem;
 
     std::cerr << "[csrspmm] Unknown algorithm: " << name
               << ", using Naive\n";

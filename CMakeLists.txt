@@ -73,3 +73,15 @@ set_target_properties(test_csr_spmm PROPERTIES
 # required if there are multiple CUDA files, allow device code in 
 # separate .cu files to call each other
 
+# ------------ Benchmark CSR kernels -----------------
+add_executable(bench_csr_spmm benchmarks/bench_csr_spmm.cu)
+
+target_include_directories(bench_csr_spmm PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/common
+)
+
+target_link_libraries(bench_csr_spmm PRIVATE csrspmm)
+
+set_target_properties(bench_csr_spmm PROPERTIES
+    CUDA_SEPARABLE_COMPILATION ON
+)   
