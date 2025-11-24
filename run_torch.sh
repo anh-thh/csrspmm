@@ -1,38 +1,31 @@
-# -----------------------------
-# ENVIRONMENT SETUP
-# -----------------------------
+#!/bin/bash
+set -e  # stop on first error
 
-# Create fresh env (mac/linux)
-python3.11 -m venv spmm_env
-source spmm_env/bin/activate
+echo "======================================"
+echo "   Rebuilding csrspmm_torch extension"
+echo "======================================"
 
-# or (Windows PowerShell)
-# python -m venv spmm_env
-# spmm_env\Scripts\activate
+# Activate your conda env
+echo "Activating conda env..."
+source ~/miniconda3/etc/profile.d/conda.sh
+conda activate spmm_env
 
-pip install --upgrade pip setuptools wheel
+# Clean pip cache (optional but recommended)
+echo "Purging pip cache..."
+pip cache purge
 
-# -----------------------------
-# TORCH INSTALL
-# -----------------------------
+# Rebuild PyTorch extension
+echo "Installing in editable mode..."
+python -m pip install --no-build-isolation -e .
 
-# (A) macOS or CPU-only machine:
-pip install torch torchvision torchaudio
+echo ""
+echo "======================================"
+echo "        Running Torch Benchmark"
+echo "======================================"
 
-# (B) Windows/Linux with CUDA 13 (like Biglab):
-# pip install --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu130
+python torch_interface/torch_benchmarks.py
 
-# (C) Windows/Linux with CUDA 12.1:
-# pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
-
-# -----------------------------
-# INSTALL SPMM EXTENSION
-# -----------------------------
-cd torch_interface
-pip install -e .
-cd ..
-
-# -----------------------------
-# RUN TEST
-# -----------------------------
-python tests/test_naive_spmm.py
+echo ""
+echo "======================================"
+echo "          Benchmark Complete"
+echo "======================================"
