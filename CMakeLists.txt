@@ -85,3 +85,20 @@ target_link_libraries(bench_csrspmm PRIVATE csrspmm)
 set_target_properties(bench_csrspmm PROPERTIES
     CUDA_SEPARABLE_COMPILATION ON
 )   
+
+
+# ------------ Benchmark curparse API -----------------
+add_executable(bench_cusparse benchmarks/bench_cusparse.cu)
+
+target_include_directories(bench_cusparse PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/common
+)
+
+target_link_libraries(bench_cusparse PRIVATE 
+    csrspmm
+    -lcusparse
+)
+
+set_target_properties(bench_cusparse PROPERTIES
+    CUDA_SEPARABLE_COMPILATION ON
+)

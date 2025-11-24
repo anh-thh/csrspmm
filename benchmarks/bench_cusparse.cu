@@ -1,9 +1,17 @@
-#include "helper.cuh"
-#include "csr_utils.cuh"
-#include "dense_utils.cuh"
-#include <cuda_runtime_api.h>
-#include <cusparse.h>
 #include <string>
+#include <cstdlib>
+#include <cstring>
+#include <cuda_runtime_api.h>
+#include <iostream>
+#include <cusparse.h>
+
+#include <csrspmm/matrix.h>
+#include <csrspmm/csr_utils.h>
+#include <csrspmm/dense_utils.h>
+#include <csrspmm/csrspmm.h>
+#include <csrspmm/error_check.h>
+
+#include "helper.cuh"
 
 #define WARMUP 200
 #define REPS 1000
@@ -48,6 +56,7 @@ int main (int argc, char** argv) {
     }    
     
     
+    // csrspmm::Algorithm algo = csrspmm::parse_algorithm(algo_str);
     bool is_int = false;
 
     float min_val = -10.0f;
@@ -55,34 +64,29 @@ int main (int argc, char** argv) {
 
     float dense2csr_tol = 0.0f;
 
-    // create matrices 
-    float* h_A = (float*)malloc(M * N * sizeof(float));
-    float* h_B = (float*)malloc(N * K * sizeof(float));
-    float* h_C = (float*)malloc(M * K * sizeof(float));
-    init_random_dense_matrix(h_A, M, N, min_val, max_val, sparsity, is_int);
-    init_random_dense_matrix(h_B, N, K, min_val, max_val, 0.0f, is_int);
-    init_random_dense_matrix(h_C, M, K, min_val, max_val, 0.0f, is_int);
+    // Generate A, B and C
+    csrspmm::DenseMatrix hA, hB, hC;
+
+    csrspmm::dense_alloc_host(hA, M, N);
+    csrspmm::dense_alloc_host(hB, N, K);
+    csrspmm::dense_alloc_host(hC, M, K);
     
-    CSRMatrix A_csr;
-    dense2csr(h_A, M, N, A_csr, dense2csr_tol);
+    csrspmm::dense_init_random(hA, min_val, max_val, sparsity, is_int);
+    csrspmm::dense_init_random(hB, min_val, max_val, 0.0f, is_int);
+    csrspmm::dense_init_random(hC, min_val, max_val, 0.0f, is_int);
 
+    csrspmm::CSRMatrix hA_CSR;
+    csrspmm::dense2csr(hA, hA_CSR, dense2csr_tol);
 
-    CSRMatrix d_A_csr;
-    cudaCheck(cudaMalloc(&d_A_csr.values,  A_csr.nnz * sizeof(float)));
-    cudaCheck(cudaMalloc(&d_A_csr.col_idx, A_csr.nnz * sizeof(int)));
-    cudaCheck(cudaMalloc(&d_A_csr.row_ptr, (A_csr.num_rows + 1) * sizeof(int)));
-    cudaCheck(cudaMemcpy(d_A_csr.values,  A_csr.values,  
-                         A_csr.nnz * sizeof(float), cudaMemcpyHostToDevice));
-    cudaCheck(cudaMemcpy(d_A_csr.col_idx, A_csr.col_idx, 
-                         A_csr.nnz * sizeof(int),   cudaMemcpyHostToDevice));
-    cudaCheck(cudaMemcpy(d_A_csr.row_ptr, A_csr.row_ptr, 
-                        (A_csr.num_rows + 1) * sizeof(int), cudaMemcpyHostToDevice));
+    // Allocate device memory
+    csrspmm::CSRMatrix dA_CSR;
+    csrspmm::csr_host2device(hA_CSR, dA_CSR);
 
-    float *d_B, *d_C;
-    cudaCheck(cudaMalloc(&d_B, N * K * sizeof(float)));
-    cudaCheck(cudaMalloc(&d_C, M * K * sizeof(float)));
-    cudaCheck(cudaMemcpy(d_B, h_B, N * K * sizeof(float), cudaMemcpyHostToDevice));
-    cudaCheck(cudaMemcpy(d_C, h_C, M * K * sizeof(float), cudaMemcpyHostToDevice));
+    csrspmm::DenseMatrix dB, dC;
+    csrspmm::dense_host2device(hB, dB);
+    csrspmm::dense_host2device(hC, dC);
+
+    // csrspmm::spmm(dA_CSR, dB, dC, alpha, beta, algo);
 
     
     // ----------------------------------------------------------------------
@@ -96,19 +100,19 @@ int main (int argc, char** argv) {
 
     cusparseCheck(cusparseCreateCsr(
         &matA,
-        M, N, A_csr.nnz,
-        (void*)d_A_csr.row_ptr,
-        (void*)d_A_csr.col_idx,
-        (void*)d_A_csr.values,
+        M, N, dA_CSR.nnz,
+        (void*)dA_CSR.row_ptr,
+        (void*)dA_CSR.col_idx,
+        (void*)dA_CSR.values,
         CUSPARSE_INDEX_32I,
         CUSPARSE_INDEX_32I,
         CUSPARSE_INDEX_BASE_ZERO,
         CUDA_R_32F));
 
     cusparseCheck(cusparseCreateDnMat(
-        &matB, N, K, K, (void*)d_B, CUDA_R_32F, CUSPARSE_ORDER_ROW));
+        &matB, N, K, K, (void*)dB.data, CUDA_R_32F, CUSPARSE_ORDER_ROW));
     cusparseCheck(cusparseCreateDnMat(
-        &matC, M, K, K, (void*)d_C, CUDA_R_32F, CUSPARSE_ORDER_ROW));
+        &matC, M, K, K, (void*)dC.data, CUDA_R_32F, CUSPARSE_ORDER_ROW));
 
     size_t bufferSize = 0;
     void*  dBuffer    = nullptr;
@@ -174,7 +178,7 @@ int main (int argc, char** argv) {
     cudaCheck(cudaEventElapsedTime(&elapsed_time, beg, end));
     elapsed_time /= 1000.; // Convert to seconds
 
-    double flops = 2.0 * A_csr.nnz * K;  // NOTE: 2 ops per nonzero × K columns
+    double flops = 2.0 * dA_CSR.nnz * K;  // NOTE: 2 ops per nonzero × K columns
     printf(
         "cuSPARSE api: avg elapsed time: (%7.6f) s, performance: (%7.2f) GFLOPS. size: [%u×%u×%u]\n",
         elapsed_time / REPS,
@@ -194,17 +198,12 @@ int main (int argc, char** argv) {
     cusparseCheck(cusparseDestroyDnMat(matC));
     cusparseCheck(cusparseDestroy(handle));
 
-    free(h_A);
-    free(A_csr.row_ptr);
-    free(A_csr.col_idx);
-    free(A_csr.values);
-    free(h_B);
-    free(h_C);
-
-    cudaCheck(cudaFree(d_A_csr.row_ptr));
-    cudaCheck(cudaFree(d_A_csr.col_idx));
-    cudaCheck(cudaFree(d_A_csr.values));
-    cudaCheck(cudaFree(d_B));
-    cudaCheck(cudaFree(d_C));
+    csrspmm::dense_free_host(hA);
+    csrspmm::dense_free_host(hB);
+    csrspmm::dense_free_host(hC);
+    csrspmm::csr_free_host(hA_CSR);
+    csrspmm::csr_free_device(dA_CSR);
+    csrspmm::dense_free_device(dB);
+    csrspmm::dense_free_device(dC);
     return 0;
 }
