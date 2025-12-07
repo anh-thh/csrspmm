@@ -8,6 +8,7 @@ torch::Tensor csrspmm_naive_forward(
 torch::Tensor csrspmm_warp_per_row_forward(
     torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, float, float
 );
+// torch::Tensor csrspmm_warp_per_row_forward(torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor);
 
 torch::Tensor csrspmm_warp_per_row_fp4_forward(
     torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, float, float
