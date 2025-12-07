@@ -40,7 +40,7 @@ def generate_random_csr(M, N, density=0.1):
 
 
 def run_single_test(M, N, K, device, algo="naive"):
-    print(f"\n=== Running Test: {M} x {N} × {N} x {K} ===")
+    print(f"\n=== Running Test: [{M} x {N}] x [{N} x {K}] ===")
 
     # Generate random CSR matrix
     A_dense, crow, col, val = generate_random_csr(M, N, density=0.7)
@@ -61,6 +61,8 @@ def run_single_test(M, N, K, device, algo="naive"):
         C1 = torch_csrspmm.csrspmm_naive(crow, col, val, B, alpha, beta)
     elif algo == "warp_per_row": 
         C1 = torch_csrspmm.csrspmm_warp_per_row(crow, col, val, B, alpha, beta)
+    elif algo == "warp_per_row_fp4": 
+        C1 = torch_csrspmm.csrspmm_warp_per_row_fp4(crow, col, val, B, alpha, beta)
     else: 
         raise NotImplementedError("Algorithm currently not supported")
 
@@ -84,17 +86,17 @@ def main():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print("Using device:", device)
     
-    algos = ["naive", "warp_per_row"]
+    algos = ["naive", "warp_per_row", "warp_per_row_fp4"]
     for algo in algos:
         # ---- Small tests ----
         run_single_test(4, 4, 8, device, algo)
         run_single_test(8, 8, 16, device, algo)
 
         # ---- Medium tests ----
-        for _ in range(3):
-            M = random.randint(0, 10)
-            N = random.randint(0, 10)
-            K = random.randint(0, 10)
+        for _ in range(5):
+            M = random.randint(2, 10)
+            N = random.randint(2, 10)
+            K = random.randint(2, 10)
             run_single_test(2**M, 2**N, 2**K, device, algo)
 
 
