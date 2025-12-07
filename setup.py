@@ -15,6 +15,7 @@ sources = [
     # Torch bindings
     str(PROJECT_ROOT / "torch_csrspmm" / "binding.cpp"),
     str(PROJECT_ROOT / "torch_csrspmm" / "torch_csrspmm_naive.cpp"),
+    str(PROJECT_ROOT / "torch_csrspmm" / "torch_csrspmm_warp_per_row.cpp"),
 
     # Host utilities
     str(PROJECT_ROOT / "src" / "host" / "csr_utils.cpp"),
@@ -64,7 +65,7 @@ extra_compile_args = {
 # --------------------------------------------------
 ext_modules = [
     CUDAExtension(
-        name="csrspmm_torch",
+        name="torch_csrspmm",
         sources=sources,
         include_dirs=include_dirs,
         extra_compile_args=extra_compile_args,
