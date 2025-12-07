@@ -39,7 +39,7 @@ def generate_random_csr(M, N, density=0.1):
     return dense, crow, col, val
 
 
-def run_single_test(M, N, K, device):
+def run_single_test(M, N, K, device, algo="naive"):
     print(f"\n=== Running Test: {M} x {N} × {N} x {K} ===")
 
     # Generate random CSR matrix
@@ -57,16 +57,22 @@ def run_single_test(M, N, K, device):
 
     # ---- Run your kernel ----
     alpha, beta = 1, 1 
-    C1 = torch_csrspmm.csrspmm_naive(crow, col, val, B, alpha, beta)
+    if algo == "naive":
+        C1 = torch_csrspmm.csrspmm_naive(crow, col, val, B, alpha, beta)
+    elif algo == "warp_per_row": 
+        C1 = torch_csrspmm.csrspmm_warp_per_row(crow, col, val, B, alpha, beta)
+    else: 
+        raise NotImplementedError("Algorithm currently not supported")
+
 
     # ---- Reference result ----
     C2 = A_dense @ B
 
     # ---- Compare ----
     if torch.allclose(C1, C2, atol=1e-4, rtol=1e-4):
-        print("PASS — Output matches PyTorch matmul")
+        print(f"[{algo}] PASS — Output matches PyTorch matmul")
     else:
-        print("FAIL — Mismatch detected")
+        print(f"[{algo}] FAIL — Mismatch detected")
         print("Your output C1:\n", C1)
         print("Reference C2:\n", C2)
         diff = (C1 - C2).abs().max()
@@ -77,17 +83,19 @@ def main():
     # Pick device
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print("Using device:", device)
+    
+    algos = ["naive", "warp_per_row"]
+    for algo in algos:
+        # ---- Small tests ----
+        run_single_test(4, 4, 8, device, algo)
+        run_single_test(8, 8, 16, device, algo)
 
-    # ---- Small tests ----
-    run_single_test(2, 3, 4, device)
-    run_single_test(5, 5, 3, device)
-
-    # ---- Medium tests ----
-    for _ in range(3):
-        M = random.randint(10, 30)
-        N = random.randint(10, 30)
-        K = random.randint(5, 20)
-        run_single_test(M, N, K, device)
+        # ---- Medium tests ----
+        for _ in range(3):
+            M = random.randint(0, 10)
+            N = random.randint(0, 10)
+            K = random.randint(0, 10)
+            run_single_test(2**M, 2**N, 2**K, device, algo)
 
 
 if __name__ == "__main__":
