@@ -63,19 +63,19 @@ def fn_torch_sparse_addmm(alpha, A_csr, beta, B, C):
 # ----------------------------------------------------------------------
 # Our custom CUDA kernel (naive)
 # ----------------------------------------------------------------------
-def fn_custom_naive(alpha, A_csr, beta, B, C):
-    # Convert CSR indices to int32 for CUDA
-    crow = A_csr.crow_indices().to(torch.int32)
+def extract_csr(A_csr):
+    row = A_csr.crow_indices().to(torch.int32)
     col  = A_csr.col_indices().to(torch.int32)
-    val  = A_csr.values()  # already float32
+    val  = A_csr.values()  # float32
+    return row, col, val
 
-    # call CUDA kernel
-    C_tmp = torch_csrspmm.naive_spmm(crow, col, val, B)
+def fn_custom_naive(alpha, A_csr, beta, B, C):
+    A_row_ptr, A_col_idx, A_values = extract_csr(A_csr)
+    C_tmp = torch_csrspmm.csrspmm_naive(A_row_ptr, A_col_idx, A_values, B, alpha, beta)
+    return C_tmp
 
-    # apply alpha * A*B + beta*C
-    return alpha * C_tmp + beta * C
 
-
+    
 # ----------------------------------------------------------------------
 # Reporting helper
 # ----------------------------------------------------------------------

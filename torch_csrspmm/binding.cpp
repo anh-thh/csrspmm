@@ -1,18 +1,13 @@
 #include <torch/extension.h>
 
 // Declare the function implemented in naive_wrapper.cpp
-torch::Tensor naive_spmm_forward(
-    torch::Tensor crow,
-    torch::Tensor col,
-    torch::Tensor values,
-    torch::Tensor B
+torch::Tensor csrspmm_naive_forward(
+    torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, float, float
 );
+// torch::Tensor csrspmm_warp_per_row_forward(torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor);
 
 // Expose to Python via PyBind11
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
-    m.def(
-        "naive_spmm",
-        &naive_spmm_forward,
-        "Naive CSR × Dense SpMM (CUDA)"
-    );
+    m.def("csrspmm_naive", &csrspmm_naive_forward, "CSR SpMM (naive)");
+    // m.def("csrspmm_warp_per_row", &csrspmm_warp_per_row_forward, "CSR SpMM (warp_per_row)");
 }
