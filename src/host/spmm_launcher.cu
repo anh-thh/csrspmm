@@ -4,9 +4,7 @@
 #include <csrspmm/config.h>
 #include <csrspmm/kernels.h>
 
-
 namespace csrspmm {
-
 
 void launch_naive(const CSRMatrix& A,
                   const DenseMatrix& B,
@@ -79,12 +77,11 @@ void launch_warp_per_row_fp4(const CSRMatrix& A,
     );
 }
 
-
 void launch_warp_per_row_smem(const CSRMatrix& A,
-                                  const DenseMatrix& B,
-                                  DenseMatrix& C,
-                                  float alpha,
-                                  float beta)
+                              const DenseMatrix& B,
+                              DenseMatrix& C,
+                              float alpha,
+                              float beta)
 {
     const int warps_per_block   = 4;
     const int threads_per_block = warps_per_block * WARP_SIZE;
@@ -112,7 +109,6 @@ void launch_warp_per_row_smem(const CSRMatrix& A,
         C.data
     );
 }
-
 
 void launch_warp_per_row_smem_fp4(const CSRMatrix& A,
                                   const DenseMatrix& B,
@@ -147,4 +143,38 @@ void launch_warp_per_row_smem_fp4(const CSRMatrix& A,
     );
 }
 
+void launch_naive_shared(const CSRMatrix& A,
+                         const DenseMatrix& B,
+                         DenseMatrix& C,
+                         float alpha,
+                         float beta)
+{
+    const int TILE_COLS = 128;
+
+    dim3 block(TILE_COLS, 1);
+    dim3 grid(
+        (B.width + TILE_COLS - 1) / TILE_COLS,
+        A.height
+    );
+
+
+    size_t shmem_size = TILE_COLS * sizeof(float);
+
+    kernel::csrspmm_naive_shared<<<
+        grid,
+        block,
+        shmem_size>>>(
+        A.height,      
+        A.width,       
+        B.width,       
+        alpha,
+        beta,
+        A.values,
+        A.col_idx,
+        A.row_ptr,
+        B.data,
+        C.data
+    );
 }
+
+} // namespace csrspmm

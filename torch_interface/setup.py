@@ -5,11 +5,8 @@ from torch.utils.cpp_extension import BuildExtension, CUDAExtension
 # -------------------------------------------------------------------
 # Project root = parent of torch_interface
 # -------------------------------------------------------------------
-# PROJECT_ROOT = Path(__file__).resolve().parent.parent
 PROJECT_ROOT = Path(__file__).resolve().parent
 print("PROJECT ROOT =", PROJECT_ROOT)
-
-# print(">>> PROJECT ROOT =", PROJECT_ROOT)
 
 # -------------------------------------------------------------------
 # Source files for the extension
@@ -18,6 +15,7 @@ sources = [
     # PyTorch binding wrappers
     str(PROJECT_ROOT / "torch_interface" / "binding.cpp"),
     str(PROJECT_ROOT / "torch_interface" / "naive_wrapper.cpp"),
+    str(PROJECT_ROOT / "torch_interface" / "naive_shared_wrapper.cpp"),   # NEW
 
     # Host C++ sources
     str(PROJECT_ROOT / "src" / "host" / "csr_utils.cpp"),
@@ -26,6 +24,7 @@ sources = [
 
     # Device CUDA kernels
     str(PROJECT_ROOT / "src" / "device" / "csrspmm_naive.cu"),
+    str(PROJECT_ROOT / "src" / "device" / "csrspmm_naive_shared.cu"),     # NEW
 ]
 
 # -------------------------------------------------------------------
@@ -42,7 +41,7 @@ include_dirs = [
 # -------------------------------------------------------------------
 extra_compile_args = {
     "cxx": [
-        "/O2",        # MSVC optimization
+        "/O2",
         "/std:c++17",
     ],
     "nvcc": [
@@ -76,7 +75,7 @@ ext_modules = [
 # -------------------------------------------------------------------
 setup(
     name="csrspmm_torch",
-    version="0.0.1",
+    version="0.0.2",
     ext_modules=ext_modules,
     cmdclass={"build_ext": BuildExtension},
     packages=["torch_interface"],

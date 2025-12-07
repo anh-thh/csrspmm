@@ -15,6 +15,7 @@ sources = [
     # Torch bindings
     str(PROJECT_ROOT / "torch_interface" / "binding.cpp"),
     str(PROJECT_ROOT / "torch_interface" / "naive_wrapper.cpp"),
+    str(PROJECT_ROOT / "torch_interface" / "naive_shared_wrapper.cpp"),  # shared wrapper
 
     # Host utilities
     str(PROJECT_ROOT / "src" / "host" / "csr_utils.cpp"),
@@ -23,6 +24,7 @@ sources = [
 
     # Device kernels
     str(PROJECT_ROOT / "src" / "device" / "csrspmm_naive.cu"),
+    str(PROJECT_ROOT / "src" / "device" / "csrspmm_naive_smem.cu"),      # <-- THIS ONE
     str(PROJECT_ROOT / "src" / "device" / "csrspmm_warp_per_row.cu"),
     str(PROJECT_ROOT / "src" / "device" / "csrspmm_warp_per_row_fp4.cu"),
     str(PROJECT_ROOT / "src" / "device" / "csrspmm_warp_per_row_smem.cu"),
@@ -39,7 +41,7 @@ include_dirs = [
 ]
 
 # --------------------------------------------------
-# CUDA + CXX compile flags for Windows + CUDA 13.0
+# CUDA + CXX compile flags
 # --------------------------------------------------
 extra_compile_args = {
     "cxx": [
@@ -53,7 +55,6 @@ extra_compile_args = {
         "-D__CUDA_NO_BFLOAT16_CONVERSIONS__",
         "-D__CUDA_NO_HALF2_OPERATORS__",
 
-        # VLAB GPUs usually = Turing (sm_75)
         "-gencode=arch=compute_75,code=sm_75",
         "-gencode=arch=compute_75,code=compute_75",
     ],
@@ -76,8 +77,8 @@ ext_modules = [
 # --------------------------------------------------
 setup(
     name="csrspmm_torch",
-    version="0.0.1",
-    packages=["torch_interface"],   # so Python can import torch_interface
+    version="0.0.3",
+    packages=["torch_interface"],
     ext_modules=ext_modules,
     cmdclass={"build_ext": BuildExtension},
 )
