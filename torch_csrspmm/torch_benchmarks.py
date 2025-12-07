@@ -1,7 +1,7 @@
 import torch
 import time
 import numpy as np
-import csrspmm_torch   # your custom CUDA extension
+import torch_csrspmm   # your custom CUDA extension
 
 
 print(f"PyTorch version: {torch.__version__}")
@@ -70,7 +70,7 @@ def fn_custom_naive(alpha, A_csr, beta, B, C):
     val  = A_csr.values()  # already float32
 
     # call CUDA kernel
-    C_tmp = csrspmm_torch.naive_spmm(crow, col, val, B)
+    C_tmp = torch_csrspmm.naive_spmm(crow, col, val, B)
 
     # apply alpha * A*B + beta*C
     return alpha * C_tmp + beta * C

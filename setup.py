@@ -13,8 +13,8 @@ print(">>> PROJECT ROOT =", PROJECT_ROOT)
 # --------------------------------------------------
 sources = [
     # Torch bindings
-    str(PROJECT_ROOT / "torch_interface" / "binding.cpp"),
-    str(PROJECT_ROOT / "torch_interface" / "naive_wrapper.cpp"),
+    str(PROJECT_ROOT / "torch_csrspmm" / "binding.cpp"),
+    str(PROJECT_ROOT / "torch_csrspmm" / "naive_wrapper.cpp"),
 
     # Host utilities
     str(PROJECT_ROOT / "src" / "host" / "csr_utils.cpp"),
@@ -75,9 +75,9 @@ ext_modules = [
 # Setup
 # --------------------------------------------------
 setup(
-    name="csrspmm_torch",
+    name="torch_csrspmm",
     version="0.0.1",
-    packages=["torch_interface"],   # so Python can import torch_interface
+    packages=["torch_csrspmm"], 
     ext_modules=ext_modules,
     cmdclass={"build_ext": BuildExtension},
 )
