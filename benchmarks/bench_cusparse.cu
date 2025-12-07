@@ -180,7 +180,7 @@ int main (int argc, char** argv) {
 
     double flops = 2.0 * dA_CSR.nnz * K;  // NOTE: 2 ops per nonzero × K columns
     printf(
-        "cuSPARSE api: avg elapsed time: (%7.6f) s, performance: (%7.2f) GFLOPS. size: [%u×%u×%u]\n",
+        "cuSPARSE api: avg elapsed time: (%7.6f) s, performance: (%7.2f) GFLOPS. size: [%u x %u x %u]\n",
         elapsed_time / REPS,
         (REPS * flops * 1e-9) / elapsed_time,
         M, N, K);
