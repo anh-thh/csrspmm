@@ -65,7 +65,7 @@ extra_compile_args = {
 # --------------------------------------------------
 ext_modules = [
     CUDAExtension(
-        name="torch_csrspmm",
+        name="torch_csrspmm._C",
         sources=sources,
         include_dirs=include_dirs,
         extra_compile_args=extra_compile_args,

@@ -4,7 +4,7 @@ import random
 import numpy as np
 
 # Import your interface
-from csrspmm_torch import naive_spmm
+import torch_csrspmm
 
 
 def generate_random_csr(M, N, density=0.1):
@@ -56,16 +56,17 @@ def run_single_test(M, N, K, device):
     A_dense = A_dense.to(device)
 
     # ---- Run your kernel ----
-    C1 = naive_spmm(crow, col, val, B)
+    alpha, beta = 1, 1 
+    C1 = torch_csrspmm.csrspmm_naive(crow, col, val, B, alpha, beta)
 
     # ---- Reference result ----
     C2 = A_dense @ B
 
     # ---- Compare ----
     if torch.allclose(C1, C2, atol=1e-4, rtol=1e-4):
-        print("✔️ PASS — Output matches PyTorch matmul")
+        print("PASS — Output matches PyTorch matmul")
     else:
-        print("❌ FAIL — Mismatch detected")
+        print("FAIL — Mismatch detected")
         print("Your output C1:\n", C1)
         print("Reference C2:\n", C2)
         diff = (C1 - C2).abs().max()
