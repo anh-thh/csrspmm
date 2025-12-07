@@ -14,7 +14,7 @@ print(">>> PROJECT ROOT =", PROJECT_ROOT)
 sources = [
     # Torch bindings
     str(PROJECT_ROOT / "torch_csrspmm" / "binding.cpp"),
-    str(PROJECT_ROOT / "torch_csrspmm" / "naive_wrapper.cpp"),
+    str(PROJECT_ROOT / "torch_csrspmm" / "torch_csrspmm_naive.cpp"),
 
     # Host utilities
     str(PROJECT_ROOT / "src" / "host" / "csr_utils.cpp"),
