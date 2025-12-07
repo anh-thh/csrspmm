@@ -8,36 +8,27 @@
 
 namespace csrspmm {
 
-
-
 Algorithm parse_algorithm(const std::string& name)
 {
-    if (name == "Naive")                return Algorithm::Naive;
-    if (name == "WarpPerRow")           return Algorithm::WarpPerRow;
-    if (name == "WarpPerRowFp4")        return Algorithm::WarpPerRowFp4;
-    if (name == "WarpPerRowSmem")       return Algorithm::WarpPerRowSmem;
-    if (name == "WarpPerRowSmemFp4")    return Algorithm::WarpPerRowSmemFp4;
+    if (name == "Naive")             return Algorithm::Naive;
+    if (name == "WarpPerRow")        return Algorithm::WarpPerRow;
+    if (name == "WarpPerRowFp4")     return Algorithm::WarpPerRowFp4;
+    if (name == "WarpPerRowSmem")    return Algorithm::WarpPerRowSmem;
+    if (name == "WarpPerRowSmemFp4") return Algorithm::WarpPerRowSmemFp4;
+    if (name == "NaiveShared")       return Algorithm::NaiveShared;
 
     std::cerr << "[csrspmm] Unknown algorithm: " << name
               << ", using Naive\n";
     return Algorithm::Naive;
 }
 
-
 void spmm(const CSRMatrix& A,
           const DenseMatrix& B,
           DenseMatrix& C,
-          float alpha, float beta,
+          float alpha,
+          float beta,
           Algorithm algo)
 {
-    // Auto-selection
-    if (algo == Algorithm::Naive) {
-        if (A.max_row_nnz < 64)
-            algo = Algorithm::Naive;
-        else
-            algo = Algorithm::Naive;
-    }
-
     switch (algo)
     {
         case Algorithm::Naive:
@@ -60,6 +51,10 @@ void spmm(const CSRMatrix& A,
             launch_warp_per_row_smem_fp4(A, B, C, alpha, beta);
             break;
 
+        case Algorithm::NaiveShared:
+            launch_naive_shared(A, B, C, alpha, beta);
+            break;
+
         default:
             printf("[csrspmm::spmm] Invalid Algorithm.\n");
             return;
@@ -70,4 +65,3 @@ void spmm(const CSRMatrix& A,
 }
 
 } // namespace csrspmm
-

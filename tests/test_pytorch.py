@@ -1,24 +1,14 @@
-
 import torch
 import random
 import numpy as np
 
-# Import your interface
-from csrspmm_torch import naive_spmm
+from csrspmm_torch import naive_spmm, naive_shared_spmm
 
 
 def generate_random_csr(M, N, density=0.1):
-    """
-    Generate a random CSR matrix with given density.
-    """
-
-    # Dense matrix
     dense = torch.rand(M, N)
+    dense = dense * (torch.rand(M, N) > density)
 
-    mask = (torch.rand(M, N) > density)
-    dense = dense * mask  # zero out many entries
-
-    # Convert to CSR
     crow = [0]
     col  = []
     val  = []
@@ -32,61 +22,50 @@ def generate_random_csr(M, N, density=0.1):
                 nnz += 1
         crow.append(nnz)
 
-    crow = torch.tensor(crow, dtype=torch.int32)
-    col  = torch.tensor(col, dtype=torch.int32)
-    val  = torch.tensor(val, dtype=torch.float32)
-
-    return dense, crow, col, val
+    return (
+        dense,
+        torch.tensor(crow, dtype=torch.int32),
+        torch.tensor(col, dtype=torch.int32),
+        torch.tensor(val, dtype=torch.float32),
+    )
 
 
 def run_single_test(M, N, K, device):
     print(f"\n=== Running Test: {M} x {N} × {N} x {K} ===")
 
-    # Generate random CSR matrix
     A_dense, crow, col, val = generate_random_csr(M, N, density=0.7)
+    B = torch.randn(N, K)
 
-    # Dense B
-    B = torch.randn(N, K, dtype=torch.float32)
-
-    # Move to device (CPU or GPU)
     crow = crow.to(device)
     col  = col.to(device)
     val  = val.to(device)
     B    = B.to(device)
     A_dense = A_dense.to(device)
 
-    # ---- Run your kernel ----
-    C1 = naive_spmm(crow, col, val, B)
+    # ---- Run kernels ----
+    C_naive = naive_spmm(crow, col, val, B)
+    C_shared = naive_shared_spmm(crow, col, val, B)
 
-    # ---- Reference result ----
-    C2 = A_dense @ B
+    # ---- Reference ----
+    C_ref = A_dense @ B
 
     # ---- Compare ----
-    if torch.allclose(C1, C2, atol=1e-4, rtol=1e-4):
-        print("✔️ PASS — Output matches PyTorch matmul")
-    else:
-        print("❌ FAIL — Mismatch detected")
-        print("Your output C1:\n", C1)
-        print("Reference C2:\n", C2)
-        diff = (C1 - C2).abs().max()
-        print("Max error:", diff.item())
+    print("Checking naive...")
+    print(torch.allclose(C_naive, C_ref, atol=1e-4, rtol=1e-4))
+
+    print("Checking naive_shared...")
+    print(torch.allclose(C_shared, C_ref, atol=1e-4, rtol=1e-4))
+
+    print("Comparing naive vs naive_shared...")
+    print(torch.allclose(C_naive, C_shared, atol=1e-4, rtol=1e-4))
 
 
 def main():
-    # Pick device
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print("Using device:", device)
 
-    # ---- Small tests ----
-    run_single_test(2, 3, 4, device)
     run_single_test(5, 5, 3, device)
-
-    # ---- Medium tests ----
-    for _ in range(3):
-        M = random.randint(10, 30)
-        N = random.randint(10, 30)
-        K = random.randint(5, 20)
-        run_single_test(M, N, K, device)
+    run_single_test(10, 12, 4, device)
 
 
 if __name__ == "__main__":

@@ -12,7 +12,8 @@ enum class Algorithm {
     WarpPerRow,
     WarpPerRowFp4,
     WarpPerRowSmem,
-    WarpPerRowSmemFp4
+    WarpPerRowSmemFp4,
+    NaiveShared
 };
 
 Algorithm parse_algorithm(const std::string& name);
