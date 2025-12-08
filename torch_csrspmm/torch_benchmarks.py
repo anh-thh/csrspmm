@@ -75,6 +75,11 @@ def fn_custom_naive(alpha, A_csr, beta, B, C):
     return C_tmp
 
 
+def fn_custom_warp_per_row_fp4(alpha, A_csr, beta, B, C):
+    A_row_ptr, A_col_idx, A_values = extract_csr(A_csr)
+    C_tmp = torch_csrspmm.csrspmm_warp_per_row_fp4(A_row_ptr, A_col_idx, A_values, B, alpha, beta)
+    return C_tmp
+
     
 # ----------------------------------------------------------------------
 # Reporting helper
@@ -82,7 +87,7 @@ def fn_custom_naive(alpha, A_csr, beta, B, C):
 def report(name, times):
     avg = np.mean(times) * 1000
     std = np.std(times) * 1000
-    print(f"{name:<25}: {avg:8.3f} ms  +/- {std:6.3f}")
+    print(f"{name:<32}: {avg:8.3f} ms  +/- {std:6.3f}")
 
 
 # ======================================================================
@@ -102,8 +107,8 @@ if __name__ == "__main__":
 
     A, B, C, A_csr = initialize_matrices(M, N, K, sparsity)
 
-    # Torch baselines
     with torch.no_grad():
+        # Torch baselines
         t_mm = run_benchmark(fn_torch_sparse_mm,
                              alpha, A_csr, beta, B, C,
                              n_warmup=n_warmup, iterations=iterations)
@@ -113,13 +118,18 @@ if __name__ == "__main__":
                                 n_warmup=n_warmup, iterations=iterations)
 
         # Custom CUDA kernel
-        t_custom = run_benchmark(fn_custom_naive,
+        t_custom_naive = run_benchmark(fn_custom_naive,
+                                 alpha, A_csr, beta, B, C,
+                                 n_warmup=n_warmup, iterations=iterations)
+
+        t_custom_warp_per_row_fp4 = run_benchmark(fn_custom_warp_per_row_fp4,
                                  alpha, A_csr, beta, B, C,
                                  n_warmup=n_warmup, iterations=iterations)
 
     print("\n---- Results ----")
     report("torch.sparse.mm", t_mm)
     report("torch.sparse.addmm", t_addmm)
-    report("custom_naive_spmm", t_custom)
+    report("torch_csrspmm_naive", t_custom_naive)
+    report("torch_csrspmm_warp_per_row_fp4", t_custom_warp_per_row_fp4)
 
     print("\nBenchmark completed.")

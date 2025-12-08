@@ -47,7 +47,7 @@ for cfg in "${CONFIGS[@]}"; do
       echo "Running $ALGO"
       OUT=$(./bench_csrspmm -M "$M" -N "$N" -K "$K" -s "$SPAR" -a 1.0 -b 0.0 -algo "$ALGO")
       GFLOPS=$(printf '%s\n' "$OUT" | get_gflops)
-      echo "$NAME,$M,$N,$K,$DENS,$SPAR,custom,$ALGO,$GFLOPS" >> "$OUT_FILE"
+      echo "$NAME,$M,$N,$K,$DENS,$SPAR,csrspmm,$ALGO,$GFLOPS" >> "$OUT_FILE"
     done
 
     # cuSPARSE baseline

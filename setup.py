@@ -19,12 +19,14 @@ sources = [
     str(PROJECT_ROOT / "torch_csrspmm" / "torch_csrspmm_warp_per_row_fp4.cpp"),
 
     # Host utilities
+    str(PROJECT_ROOT / "src" / "csrspmm.cpp"),
     str(PROJECT_ROOT / "src" / "host" / "csr_utils.cpp"),
     str(PROJECT_ROOT / "src" / "host" / "dense_utils.cpp"),
     str(PROJECT_ROOT / "src" / "host" / "spmm_launcher.cu"),
 
     # Device kernels
     str(PROJECT_ROOT / "src" / "device" / "csrspmm_naive.cu"),
+    str(PROJECT_ROOT / "src" / "device" / "csrspmm_naive_smem.cu"),
     str(PROJECT_ROOT / "src" / "device" / "csrspmm_warp_per_row.cu"),
     str(PROJECT_ROOT / "src" / "device" / "csrspmm_warp_per_row_fp4.cu"),
     str(PROJECT_ROOT / "src" / "device" / "csrspmm_warp_per_row_smem.cu"),
