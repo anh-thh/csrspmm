@@ -105,8 +105,8 @@ set_target_properties(bench_cusparse PROPERTIES
 
 
 configure_file(
-    ${CMAKE_SOURCE_DIR}/benchmarks/exp1.sh
-    ${CMAKE_BINARY_DIR}/exp1.sh
+    ${CMAKE_SOURCE_DIR}/benchmarks/csrspmm_vs_cusparse.sh
+    ${CMAKE_BINARY_DIR}/csrspmm_vs_cusparse.sh
     COPYONLY
 )
 

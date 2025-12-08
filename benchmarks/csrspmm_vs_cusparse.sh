@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-OUT_FILE="exp1.csv"
+OUT_FILE="csrspmm_vs_cusparse.csv"
 
 echo "name,M,N,K,density,sparsity,lib,algo,gflops" > "$OUT_FILE"
 
