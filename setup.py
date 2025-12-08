@@ -54,7 +54,7 @@ extra_compile_args = {
         "-D__CUDA_NO_BFLOAT16_CONVERSIONS__",
         "-D__CUDA_NO_HALF2_OPERATORS__",
 
-        # Your GPU arch (sm_75 for Turing, update if needed)
+        # Update this if your GPU arch is different
         "-gencode=arch=compute_75,code=sm_75",
         "-gencode=arch=compute_75,code=compute_75",
     ],

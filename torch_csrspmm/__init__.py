@@ -1,6 +1,6 @@
-import torch
+import torch  # not strictly needed, but fine to keep
 
-# Import compiled extension functions into Python
+# Import compiled extension symbols
 from ._C import (
     csrspmm_naive as _csrspmm_naive,
     csrspmm_naive_shared as _csrspmm_naive_shared,
@@ -10,7 +10,7 @@ from ._C import (
     csrspmm_warp_per_row_smem_fp4 as _csrspmm_warp_per_row_smem_fp4,
 )
 
-# Python-visible wrapper functions
+# Thin Python wrappers (just for a stable public API)
 def csrspmm_naive(A_rowptr, A_colidx, A_values, B, alpha, beta):
     return _csrspmm_naive(A_rowptr, A_colidx, A_values, B, alpha, beta)
 

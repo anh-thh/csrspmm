@@ -37,14 +37,15 @@ void launch_naive_shared(const CSRMatrix& A,
                          float alpha,
                          float beta)
 {
-    dim3 block(32, 32);
-    dim3 grid((B.width  + block.x - 1) / block.x,
-              (A.height + block.y - 1) / block.y);
+    // One block per row, threads over columns
+    dim3 block(128, 1);
+    dim3 grid((B.width + block.x - 1) / block.x,
+              A.height);
 
     kernel::csrspmm_naive_shared<<<grid, block>>>(
-        A.height,
-        A.width,
-        B.width,
+        A.height,   // M
+        A.width,    // N
+        B.width,    // K
         alpha, beta,
         A.values,
         A.col_idx,
