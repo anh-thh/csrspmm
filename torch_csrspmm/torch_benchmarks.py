@@ -33,7 +33,7 @@ def initialize_matrices(M, N, K, sparsity=0.7):
 # ----------------------------------------------------------------------
 # Generic timer
 # ----------------------------------------------------------------------
-def run_benchmark(fn, *args, n_warmup=10, iterations=100, **kwargs):
+def run_benchmark(fn, *args, n_warmup=200, iterations=2000, **kwargs):
     # warmup
     for _ in range(n_warmup):
         fn(*args, **kwargs)
@@ -75,6 +75,11 @@ def fn_custom_naive(alpha, A_csr, beta, B, C):
     return C_tmp
 
 
+def fn_custom_warp_per_row(alpha, A_csr, beta, B, C):
+    A_row_ptr, A_col_idx, A_values = extract_csr(A_csr)
+    C_tmp = torch_csrspmm.csrspmm_warp_per_row(A_row_ptr, A_col_idx, A_values, B, alpha, beta)
+    return C_tmp
+
 def fn_custom_warp_per_row_fp4(alpha, A_csr, beta, B, C):
     A_row_ptr, A_col_idx, A_values = extract_csr(A_csr)
     C_tmp = torch_csrspmm.csrspmm_warp_per_row_fp4(A_row_ptr, A_col_idx, A_values, B, alpha, beta)
@@ -95,10 +100,10 @@ def report(name, times):
 # ======================================================================
 if __name__ == "__main__":
 
-    M, N, K = 1024, 1024, 1024
+    M, N, K = 1024, 2048, 128
     alpha = 1.0
     beta = 0.5
-    sparsity = 0.7
+    sparsity = 0.9
 
     n_warmup = 10
     iterations = 200
@@ -122,6 +127,10 @@ if __name__ == "__main__":
                                  alpha, A_csr, beta, B, C,
                                  n_warmup=n_warmup, iterations=iterations)
 
+        t_custom_warp_per_row = run_benchmark(fn_custom_warp_per_row,
+                                 alpha, A_csr, beta, B, C,
+                                 n_warmup=n_warmup, iterations=iterations)
+
         t_custom_warp_per_row_fp4 = run_benchmark(fn_custom_warp_per_row_fp4,
                                  alpha, A_csr, beta, B, C,
                                  n_warmup=n_warmup, iterations=iterations)
@@ -130,6 +139,7 @@ if __name__ == "__main__":
     report("torch.sparse.mm", t_mm)
     report("torch.sparse.addmm", t_addmm)
     report("torch_csrspmm_naive", t_custom_naive)
+    report("torch_csrspmm_warp_per_row", t_custom_warp_per_row)
     report("torch_csrspmm_warp_per_row_fp4", t_custom_warp_per_row_fp4)
 
     print("\nBenchmark completed.")
