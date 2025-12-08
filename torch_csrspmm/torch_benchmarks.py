@@ -36,11 +36,12 @@ def initialize_matrices(M, N, K, sparsity):
     return A, B, C, A_csr
 
 
-def extract_csr(A_csr):
+def preprocess_csr(A_csr):
     row = A_csr.crow_indices().to(torch.int32)
     col = A_csr.col_indices().to(torch.int32)
     val = A_csr.values()
-    return row, col, val
+    max_row_nnz = int((row[1:] - row[:-1]).max().item())
+    return row, col, val, max_row_nnz
 
 
 def time_fn(fn, *args, n_warmup=20, iters=100):
@@ -78,6 +79,9 @@ def fn_naive(alpha, row, col, val, B, beta, C):
 def fn_warp_per_row(alpha, row, col, val, B, beta, C):
     return torch_csrspmm.csrspmm_warp_per_row(row, col, val, B, alpha, beta)
 
+def fn_warp_per_row_smem(alpha, row, col, val, max_row_nnz, B, beta, C):
+    return torch_csrspmm.csrspmm_warp_per_row_smem(row, col, val, max_row_nnz, B, alpha, beta)
+
 def fn_warp_per_row_fp4(alpha, row, col, val, B, beta, C):
     return torch_csrspmm.csrspmm_warp_per_row_fp4(row, col, val, B, alpha, beta)
 
@@ -96,14 +100,15 @@ def main():
             A, B, C, A_csr = initialize_matrices(M, N, K, sparsity)
             nnz = A_csr.values().numel()
 
-            row, col, val = extract_csr(A_csr)
+            row, col, val, max_row_nnz = preprocess_csr(A_csr)
 
             timings = {
                 "torch.mm": time_fn(fn_torch_mm, alpha, A_csr, beta, B, C),
                 "torch.addmm": time_fn(fn_torch_addmm, alpha, A_csr, beta, B, C),
-                "naive": time_fn(fn_naive, alpha, row, col, val, B, beta, C),
-                "warp_per_row": time_fn(fn_warp_per_row, alpha, row, col, val, B, beta, C),
-                "warp_per_row_fp4": time_fn(fn_warp_per_row_fp4, alpha, row, col, val, B, beta, C),
+                "Naive": time_fn(fn_naive, alpha, row, col, val, B, beta, C),
+                "WarpPerRow": time_fn(fn_warp_per_row, alpha, row, col, val, B, beta, C),
+                "WarpPerRowSmem": time_fn(fn_warp_per_row_smem, alpha, row, col, val, max_row_nnz, B, beta, C),
+                "WarpPerRowFp4": time_fn(fn_warp_per_row_fp4, alpha, row, col, val, B, beta, C),
             }
 
             for algo, t in timings.items():
