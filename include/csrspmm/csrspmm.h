@@ -9,6 +9,7 @@ namespace csrspmm {
 
 enum class Algorithm {
     Naive,
+    NaiveSmem,
     WarpPerRow,
     WarpPerRowFp4,
     WarpPerRowSmem,
