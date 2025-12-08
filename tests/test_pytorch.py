@@ -1,4 +1,3 @@
-
 import torch
 import random
 import numpy as np
@@ -59,13 +58,14 @@ def run_single_test(M, N, K, device, algo="naive"):
     alpha, beta = 1, 1 
     if algo == "naive":
         C1 = torch_csrspmm.csrspmm_naive(crow, col, val, B, alpha, beta)
+    elif algo == "naive_shared":
+        C1 = torch_csrspmm.csrspmm_naive_shared(crow, col, val, B, alpha, beta)
     elif algo == "warp_per_row": 
         C1 = torch_csrspmm.csrspmm_warp_per_row(crow, col, val, B, alpha, beta)
     elif algo == "warp_per_row_fp4": 
         C1 = torch_csrspmm.csrspmm_warp_per_row_fp4(crow, col, val, B, alpha, beta)
     else: 
         raise NotImplementedError("Algorithm currently not supported")
-
 
     # ---- Reference result ----
     C2 = A_dense @ B
@@ -86,7 +86,7 @@ def main():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print("Using device:", device)
     
-    algos = ["naive", "warp_per_row", "warp_per_row_fp4"]
+    algos = ["naive", "naive_shared", "warp_per_row", "warp_per_row_fp4"]
     for algo in algos:
         # ---- Small tests ----
         run_single_test(4, 4, 8, device, algo)

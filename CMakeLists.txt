@@ -11,11 +11,13 @@ set(CMAKE_VERBOSE_MAKEFILE ON)
 set(CMAKE_CUDA_STANDARD 17)
 set(CMAKE_CXX_STANDARD 17)
 
-# Enable relocatable device code (needed for separate compilation)
 set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
 
-# Change this to your CUDA architecture (for better compiler optmizatiom)
 set(CMAKE_CUDA_ARCHITECTURES 70 75 80 86 89 90)
+
+# Make CUDA headers visible to host C++ source files (.cpp)
+find_package(CUDAToolkit REQUIRED)
+include_directories(${CUDAToolkit_INCLUDE_DIRS})
 
 # ------------- Optimization Flags -----------
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=native -ffast-math")
@@ -69,9 +71,7 @@ target_link_libraries(test_csrspmm PRIVATE csrspmm)
 
 set_target_properties(test_csrspmm PROPERTIES
     CUDA_SEPARABLE_COMPILATION ON
-)   
-# required if there are multiple CUDA files, allow device code in 
-# separate .cu files to call each other
+)
 
 # ------------ Benchmark CSR kernels -----------------
 add_executable(bench_csrspmm benchmarks/bench_csrspmm.cu)
@@ -84,10 +84,9 @@ target_link_libraries(bench_csrspmm PRIVATE csrspmm)
 
 set_target_properties(bench_csrspmm PROPERTIES
     CUDA_SEPARABLE_COMPILATION ON
-)   
+)
 
-
-# ------------ Benchmark curparse API -----------------
+# ------------ Benchmark cuSPARSE API -----------------
 add_executable(bench_cusparse benchmarks/bench_cusparse.cu)
 
 target_include_directories(bench_cusparse PRIVATE

@@ -31,6 +31,29 @@ void launch_naive(const CSRMatrix& A,
     );
 }
 
+void launch_naive_shared(const CSRMatrix& A,
+                         const DenseMatrix& B,
+                         DenseMatrix& C,
+                         float alpha,
+                         float beta)
+{
+    dim3 block(32, 32);
+    dim3 grid((B.width  + block.x - 1) / block.x,
+              (A.height + block.y - 1) / block.y);
+
+    kernel::csrspmm_naive_shared<<<grid, block>>>(
+        A.height,
+        A.width,
+        B.width,
+        alpha, beta,
+        A.values,
+        A.col_idx,
+        A.row_ptr,
+        B.data,
+        C.data
+    );
+}
+
 void launch_warp_per_row(const CSRMatrix& A,
                          const DenseMatrix& B,
                          DenseMatrix& C,

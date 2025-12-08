@@ -14,9 +14,6 @@ else:
     print("Running benchmark on GPU:", torch.cuda.get_device_name(0))
 
 
-# ----------------------------------------------------------------------
-# Helper: initialize random sparse CSR + dense B
-# ----------------------------------------------------------------------
 def initialize_matrices(M, N, K, sparsity=0.7):
     A = torch.rand(M, K, device=DEVICE, dtype=torch.float32)
     mask = torch.rand_like(A) > sparsity
@@ -30,11 +27,7 @@ def initialize_matrices(M, N, K, sparsity=0.7):
     return A, B, C, A_csr
 
 
-# ----------------------------------------------------------------------
-# Generic timer
-# ----------------------------------------------------------------------
 def run_benchmark(fn, *args, n_warmup=10, iterations=100, **kwargs):
-    # warmup
     for _ in range(n_warmup):
         fn(*args, **kwargs)
         torch.cuda.synchronize()
@@ -49,9 +42,6 @@ def run_benchmark(fn, *args, n_warmup=10, iterations=100, **kwargs):
     return latencies
 
 
-# ----------------------------------------------------------------------
-# Baseline PyTorch ops
-# ----------------------------------------------------------------------
 def fn_torch_sparse_mm(alpha, A_csr, beta, B, C):
     return alpha * torch.sparse.mm(A_csr, B) + beta * C
 
@@ -60,14 +50,12 @@ def fn_torch_sparse_addmm(alpha, A_csr, beta, B, C):
     return torch.sparse.addmm(C, A_csr, B, beta=beta, alpha=alpha)
 
 
-# ----------------------------------------------------------------------
-# Our custom CUDA kernel (naive)
-# ----------------------------------------------------------------------
 def extract_csr(A_csr):
     row = A_csr.crow_indices().to(torch.int32)
-    col  = A_csr.col_indices().to(torch.int32)
-    val  = A_csr.values()  # float32
+    col = A_csr.col_indices().to(torch.int32)
+    val = A_csr.values()
     return row, col, val
+
 
 def fn_custom_naive(alpha, A_csr, beta, B, C):
     A_row_ptr, A_col_idx, A_values = extract_csr(A_csr)
@@ -75,19 +63,18 @@ def fn_custom_naive(alpha, A_csr, beta, B, C):
     return C_tmp
 
 
-    
-# ----------------------------------------------------------------------
-# Reporting helper
-# ----------------------------------------------------------------------
+def fn_custom_naive_shared(alpha, A_csr, beta, B, C):
+    A_row_ptr, A_col_idx, A_values = extract_csr(A_csr)
+    C_tmp = torch_csrspmm.csrspmm_naive_shared(A_row_ptr, A_col_idx, A_values, B, alpha, beta)
+    return C_tmp
+
+
 def report(name, times):
     avg = np.mean(times) * 1000
     std = np.std(times) * 1000
     print(f"{name:<25}: {avg:8.3f} ms  +/- {std:6.3f}")
 
 
-# ======================================================================
-# MAIN
-# ======================================================================
 if __name__ == "__main__":
 
     M, N, K = 1024, 1024, 1024
@@ -102,7 +89,6 @@ if __name__ == "__main__":
 
     A, B, C, A_csr = initialize_matrices(M, N, K, sparsity)
 
-    # Torch baselines
     t_mm = run_benchmark(fn_torch_sparse_mm,
                          alpha, A_csr, beta, B, C,
                          n_warmup=n_warmup, iterations=iterations)
@@ -111,14 +97,18 @@ if __name__ == "__main__":
                             alpha, A_csr, beta, B, C,
                             n_warmup=n_warmup, iterations=iterations)
 
-    # Custom CUDA kernel
     t_custom = run_benchmark(fn_custom_naive,
                              alpha, A_csr, beta, B, C,
                              n_warmup=n_warmup, iterations=iterations)
+
+    t_custom_shared = run_benchmark(fn_custom_naive_shared,
+                                    alpha, A_csr, beta, B, C,
+                                    n_warmup=n_warmup, iterations=iterations)
 
     print("\n---- Results ----")
     report("torch.sparse.mm", t_mm)
     report("torch.sparse.addmm", t_addmm)
     report("custom_naive_spmm", t_custom)
+    report("custom_naive_shared", t_custom_shared)
 
     print("\nBenchmark completed.")

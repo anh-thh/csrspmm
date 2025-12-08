@@ -10,6 +10,12 @@ void launch_naive(const CSRMatrix& A,
                   DenseMatrix& C,
                   float alpha,
                   float beta);
+            
+void launch_naive_shared(const CSRMatrix& A,
+                  const DenseMatrix& B,
+                  DenseMatrix& C,
+                  float alpha,
+                  float beta);
 
 void launch_warp_per_row(const CSRMatrix& A,
                          const DenseMatrix& B,

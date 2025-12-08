@@ -2,19 +2,17 @@ from pathlib import Path
 from setuptools import setup
 from torch.utils.cpp_extension import BuildExtension, CUDAExtension
 
-# --------------------------------------------------
-# PROJECT ROOT (directory containing setup.py)
-# --------------------------------------------------
 PROJECT_ROOT = Path(__file__).resolve().parent
 print(">>> PROJECT ROOT =", PROJECT_ROOT)
 
 # --------------------------------------------------
-# SOURCES: all host + device kernels + wrappers
+# SOURCES
 # --------------------------------------------------
 sources = [
     # Torch bindings
     str(PROJECT_ROOT / "torch_csrspmm" / "binding.cpp"),
     str(PROJECT_ROOT / "torch_csrspmm" / "torch_csrspmm_naive.cpp"),
+    str(PROJECT_ROOT / "torch_csrspmm" / "torch_csrspmm_naive_shared.cpp"),
     str(PROJECT_ROOT / "torch_csrspmm" / "torch_csrspmm_warp_per_row.cpp"),
 
     # Host utilities
@@ -24,6 +22,7 @@ sources = [
 
     # Device kernels
     str(PROJECT_ROOT / "src" / "device" / "csrspmm_naive.cu"),
+    str(PROJECT_ROOT / "src" / "device" / "csrspmm_naive_shared.cu"),
     str(PROJECT_ROOT / "src" / "device" / "csrspmm_warp_per_row.cu"),
     str(PROJECT_ROOT / "src" / "device" / "csrspmm_warp_per_row_fp4.cu"),
     str(PROJECT_ROOT / "src" / "device" / "csrspmm_warp_per_row_smem.cu"),
@@ -40,7 +39,7 @@ include_dirs = [
 ]
 
 # --------------------------------------------------
-# CUDA + CXX compile flags for Windows + CUDA 13.0
+# Compile flags
 # --------------------------------------------------
 extra_compile_args = {
     "cxx": [
@@ -54,14 +53,13 @@ extra_compile_args = {
         "-D__CUDA_NO_BFLOAT16_CONVERSIONS__",
         "-D__CUDA_NO_HALF2_OPERATORS__",
 
-        # VLAB GPUs usually = Turing (sm_75)
         "-gencode=arch=compute_75,code=sm_75",
         "-gencode=arch=compute_75,code=compute_75",
     ],
 }
 
 # --------------------------------------------------
-# CUDA Extension definition
+# CUDA EXTENSION
 # --------------------------------------------------
 ext_modules = [
     CUDAExtension(
@@ -78,7 +76,7 @@ ext_modules = [
 setup(
     name="torch_csrspmm",
     version="0.0.1",
-    packages=["torch_csrspmm"], 
+    packages=["torch_csrspmm"],
     ext_modules=ext_modules,
     cmdclass={"build_ext": BuildExtension},
 )

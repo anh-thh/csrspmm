@@ -1,5 +1,7 @@
+#include <cuda_runtime.h>
 #include <cctype>
 #include <iostream>
+
 #include <csrspmm/csrspmm.h>
 #include <csrspmm/kernels.h>
 #include <csrspmm/config.h>
@@ -8,11 +10,10 @@
 
 namespace csrspmm {
 
-
-
 Algorithm parse_algorithm(const std::string& name)
 {
     if (name == "Naive")                return Algorithm::Naive;
+    if (name == "NaiveShared")          return Algorithm::NaiveShared;
     if (name == "WarpPerRow")           return Algorithm::WarpPerRow;
     if (name == "WarpPerRowFp4")        return Algorithm::WarpPerRowFp4;
     if (name == "WarpPerRowSmem")       return Algorithm::WarpPerRowSmem;
@@ -23,14 +24,12 @@ Algorithm parse_algorithm(const std::string& name)
     return Algorithm::Naive;
 }
 
-
 void spmm(const CSRMatrix& A,
           const DenseMatrix& B,
           DenseMatrix& C,
           float alpha, float beta,
           Algorithm algo)
 {
-    // Auto-selection
     if (algo == Algorithm::Naive) {
         if (A.max_row_nnz < 64)
             algo = Algorithm::Naive;
@@ -42,6 +41,10 @@ void spmm(const CSRMatrix& A,
     {
         case Algorithm::Naive:
             launch_naive(A, B, C, alpha, beta);
+            break;
+
+        case Algorithm::NaiveShared:
+            launch_naive_shared(A, B, C, alpha, beta);
             break;
 
         case Algorithm::WarpPerRow:
@@ -70,4 +73,3 @@ void spmm(const CSRMatrix& A,
 }
 
 } // namespace csrspmm
-
