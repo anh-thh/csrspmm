@@ -80,26 +80,9 @@ for case in df["case"].unique():
     plt.close()
 
 
-print("\n=== Summary: Mean GFLOPS by Algorithm (overall) ===")
-summary_overall = (
-    df.groupby("algo")["gflops"]
-      .agg(["mean", "max", "min", "median"])
-      .sort_values("mean", ascending=False)
-)
-print(summary_overall.to_string())
-print()
+print("\n========= Summary =========")
 
-print("\n=== Summary: Mean GFLOPS per Algorithm per Matrix Size ===")
-summary_by_case = (
-    df.groupby(["case", "algo"])["gflops"]
-      .agg(["mean", "max"])
-      .reset_index()
-      .sort_values(["case", "mean"], ascending=[True, False])
-)
-print(summary_by_case.to_string())
-print()
-
-print("\n=== Speedup vs cuSPARSE (GFLOPS_algo / GFLOPS_cuSPARSE) ===")
+mean_gflops = df.groupby("algo")["gflops"].mean().rename("mean_gflops")
 
 cus = df[df["algo"] == "cuSPARSE"][["case", "density", "gflops"]]
 cus = cus.rename(columns={"gflops": "cusparse_gflops"})
@@ -107,13 +90,11 @@ cus = cus.rename(columns={"gflops": "cusparse_gflops"})
 merged = df.merge(cus, on=["case", "density"], how="left")
 merged["speedup"] = merged["gflops"] / merged["cusparse_gflops"]
 
-speedup_table = (
-    merged[merged["algo"] != "cuSPARSE"]
-    .groupby(["algo"])
-    .agg(mean_speedup=("speedup", "mean"),
-         max_speedup=("speedup", "max"))
-    .sort_values("mean_speedup", ascending=False)
-)
+mean_speedup = merged.groupby("algo")["speedup"].mean().rename("mean_speedup")
 
-print(speedup_table.to_string())
+mean_speedup["cuSPARSE"] = 1.0
 
+summary = pd.concat([mean_gflops, mean_speedup], axis=1)
+summary = summary.sort_values("mean_gflops", ascending=False)
+
+print(summary.to_string())
