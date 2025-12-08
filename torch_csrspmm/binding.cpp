@@ -35,4 +35,12 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
     m.def("csrspmm_warp_per_row_smem_fp4",
           &csrspmm_warp_per_row_smem_fp4_forward,
           "CSR SpMM (warp_per_row_smem_fp4)");
+
+    // m.def("csrspmm_warp_per_row_smem_forward",
+    //   &csrspmm_warp_per_row_smem_forward,
+    //   "CSRSpMM WarpPerRow SMEM forward kernel");
+
+    // m.def("csrspmm_warp_per_row_smem_fp4_forward",
+    //   &csrspmm_warp_per_row_smem_fp4_forward,
+    //   "CSRSpMM WarpPerRow SMEM FP4 forward kernel");
 }

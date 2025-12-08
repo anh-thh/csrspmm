@@ -2,48 +2,50 @@
 #include <iostream>
 
 #include "csrspmm/matrix.h"
-#include "csrspmm/csr_utils.h"
-#include "csrspmm/dense_utils.h"
 #include "csrspmm/spmm_launcher.cuh"
 
 using torch::Tensor;
 
 torch::Tensor csrspmm_warp_per_row_smem_forward(
-    Tensor A_row_ptr,   // int32, size = M+1
-    Tensor A_col_idx,   // int32, size = nnz
-    Tensor A_values,    // float32, size = nnz
-    Tensor B,           // float32, [K x N]
+    Tensor A_row_ptr,
+    Tensor A_col_idx,
+    Tensor A_values,
+    Tensor B,
     float alpha,
     float beta
 ) {
-    // ---- Basic checks ----
-    TORCH_CHECK(A_row_ptr.is_cuda(),   "A_row_ptr must be CUDA");
-    TORCH_CHECK(A_col_idx.is_cuda(),   "A_col_idx must be CUDA");
-    TORCH_CHECK(A_values.is_cuda(),    "A_values must be CUDA");
-    TORCH_CHECK(B.is_cuda(),           "B must be CUDA");
+    // ---- Basic validation ----
+    TORCH_CHECK(A_row_ptr.is_cuda(), "A_row_ptr must be CUDA");
+    TORCH_CHECK(A_col_idx.is_cuda(), "A_col_idx must be CUDA");
+    TORCH_CHECK(A_values.is_cuda(),  "A_values must be CUDA");
+    TORCH_CHECK(B.is_cuda(),         "B must be CUDA");
 
-    TORCH_CHECK(A_row_ptr.dtype() == torch::kInt32,  "A_row_ptr must be int32");
-    TORCH_CHECK(A_col_idx.dtype()  == torch::kInt32, "A_col_idx must be int32");
-    TORCH_CHECK(A_values.dtype()   == torch::kFloat32, "A_values must be float32");
-    TORCH_CHECK(B.dtype()          == torch::kFloat32, "B must be float32");
+    TORCH_CHECK(A_row_ptr.dtype() == torch::kInt32);
+    TORCH_CHECK(A_col_idx.dtype()  == torch::kInt32);
+    TORCH_CHECK(A_values.dtype()   == torch::kFloat32);
+    TORCH_CHECK(B.dtype()          == torch::kFloat32);
 
-    int M = A_row_ptr.size(0) - 1;  // rows of A / C
-    int K = B.size(0);              // cols of A
-    int N = B.size(1);              // cols of B / C
+    TORCH_CHECK(B.dim() == 2, "B must be 2D [K, N]");
+
+    int M = A_row_ptr.size(0) - 1;
+    int K = B.size(0);
+    int N = B.size(1);
+
+    TORCH_CHECK(A_values.size(0) == A_col_idx.size(0),
+                "nnz mismatch: values and col_idx must match");
 
     // ---- Allocate output ----
     Tensor C = torch::zeros({M, N}, B.options());
+    TORCH_CHECK(B.is_contiguous(), "B must be contiguous");
+    TORCH_CHECK(C.is_contiguous(), "C must be contiguous");
 
-    // ---- Compute max_row_nnz on CPU from crow ----
-    Tensor row_cpu = A_row_ptr.to(torch::kCPU);
+    // ---- Compute max_row_nnz (non-blocking) ----
+    auto row_cpu = A_row_ptr.to(torch::kCPU, /*non_blocking=*/true);
     const int* h_row = row_cpu.data_ptr<int>();
 
     int max_row_nnz = 0;
     for (int i = 0; i < M; ++i) {
-        int nnz_row = h_row[i + 1] - h_row[i];
-        if (nnz_row > max_row_nnz) {
-            max_row_nnz = nnz_row;
-        }
+        max_row_nnz = std::max(max_row_nnz, h_row[i+1] - h_row[i]);
     }
 
     // ---- Fill CSRMatrix ----
@@ -56,17 +58,9 @@ torch::Tensor csrspmm_warp_per_row_smem_forward(
     dA.values      = A_values.data_ptr<float>();
     dA.max_row_nnz = max_row_nnz;
 
-    // ---- Dense B ----
-    csrspmm::DenseMatrix dB;
-    dB.height = B.size(0);
-    dB.width  = B.size(1);
-    dB.data   = B.data_ptr<float>();
-
-    // ---- Dense C ----
-    csrspmm::DenseMatrix dC;
-    dC.height = C.size(0);
-    dC.width  = C.size(1);
-    dC.data   = C.data_ptr<float>();
+    // ---- Dense matrices ----
+    csrspmm::DenseMatrix dB{B.data_ptr<float>(), B.size(0), B.size(1)};
+    csrspmm::DenseMatrix dC{C.data_ptr<float>(), C.size(0), C.size(1)};
 
     // ---- Launch kernel ----
     csrspmm::launch_warp_per_row_smem(dA, dB, dC, alpha, beta);
