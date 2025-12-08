@@ -54,15 +54,20 @@ def run_single_test(M, N, K, device, algo="naive"):
     val  = val.to(device)
     B    = B.to(device)
     A_dense = A_dense.to(device)
+    max_row_nnz = int((crow[1:] - crow[:-1]).max().item())
 
     # ---- Run your kernel ----
     alpha, beta = 1, 1 
     if algo == "naive":
         C1 = torch_csrspmm.csrspmm_naive(crow, col, val, B, alpha, beta)
-    elif algo == "warp_per_row": 
+    elif algo == "WarpPerRow": 
         C1 = torch_csrspmm.csrspmm_warp_per_row(crow, col, val, B, alpha, beta)
-    elif algo == "warp_per_row_fp4": 
+    elif algo == "WarpPerRowSmem": 
+        C1 = torch_csrspmm.csrspmm_warp_per_row_smem(crow, col, val, max_row_nnz, B, alpha, beta)
+    elif algo == "WarpPerRowFp4": 
         C1 = torch_csrspmm.csrspmm_warp_per_row_fp4(crow, col, val, B, alpha, beta)
+    elif algo == "WarpPerRowSmemFp4": 
+        C1 = torch_csrspmm.csrspmm_warp_per_row_smem_fp4(crow, col, val, max_row_nnz, B, alpha, beta)
     else: 
         raise NotImplementedError("Algorithm currently not supported")
 
@@ -86,7 +91,7 @@ def main():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print("Using device:", device)
     
-    algos = ["naive", "warp_per_row", "warp_per_row_fp4"]
+    algos = ["naive", "WarpPerRow", "WarpPerRowSmem", "WarpPerRowFp4", "WarpPerRowSmemFp4"]
     for algo in algos:
         # ---- Small tests ----
         run_single_test(4, 4, 8, device, algo)

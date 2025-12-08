@@ -45,9 +45,9 @@ int main (int argc, char** argv) {
                 "  -s <float>    sparsity (0.0 - 1.0)\n"
                 "  -a <float>    alpha scalar\n"
                 "  -b <float>    beta scalar\n"
-                "  -algo <str>   naive | warp_per_row | adaptive\n"
+                "  -algo <str>   Naive | WarpPerRow | WarpPerRowSmem | WarpPerRowFp4\n"
                 "Example:\n"
-                "  ./bench_csr_spmm -M 4096 -N 4096 -K 256 -s 0.999 -algo WarpPerRow\n";
+                "  ./bench_csrspmm -M 4096 -N 4096 -K 256 -s 0.999 -algo WarpPerRow\n";
             return 0;
         }
 

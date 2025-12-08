@@ -1,0 +1,11 @@
+========= Summary =========
+                   mean_gflops  mean_speedup
+algo                                        
+WarpPerRowSmemFp4   478.729941      2.297248
+WarpPerRowFp4       466.061595      2.267519
+torch.addmm         347.031425      1.547644
+WarpPerRowSmem      324.016601      1.702460
+Naive               310.094966      1.633002
+WarpPerRow          275.629750      1.553541
+torch.mm            240.602150      1.000000
+

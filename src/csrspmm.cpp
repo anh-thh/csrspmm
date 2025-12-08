@@ -13,6 +13,7 @@ namespace csrspmm {
 Algorithm parse_algorithm(const std::string& name)
 {
     if (name == "Naive")                return Algorithm::Naive;
+    if (name == "NaiveSmem")            return Algorithm::NaiveSmem;
     if (name == "WarpPerRow")           return Algorithm::WarpPerRow;
     if (name == "WarpPerRowFp4")        return Algorithm::WarpPerRowFp4;
     if (name == "WarpPerRowSmem")       return Algorithm::WarpPerRowSmem;
@@ -42,6 +43,10 @@ void spmm(const CSRMatrix& A,
     {
         case Algorithm::Naive:
             launch_naive(A, B, C, alpha, beta);
+            break;
+
+        case Algorithm::NaiveSmem:
+            launch_naive_smem(A, B, C, alpha, beta);
             break;
 
         case Algorithm::WarpPerRow:
