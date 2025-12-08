@@ -2,10 +2,17 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import subprocess
 import seaborn as sns
+from pathlib import Path
 
-subprocess.run(["bash", "csrspmm_vs_cusparse.sh"], check=True)
+csv_path = Path("csrspmm_vs_cusparse.csv")
+#  subprocess.run(["bash", "csrspmm_vs_cusparse.sh"], check=True)
+if not csv_path.exists():
+    print("CSV not found. Running csrspmm_vs_cusparse.sh ...")
+    subprocess.run(["bash", "csrspmm_vs_cusparse.sh"], check=True)
+else:
+    print("CSV already exists. Skipping rerun experiment.")
 
-df = pd.read_csv("csrspmm_vs_cusparse.csv")
+df = pd.read_csv(csv_path)
 
 df["density"] = pd.to_numeric(df["density"])
 
@@ -34,23 +41,40 @@ for case in df["case"].unique():
     subset = df[df["case"] == case]
 
     plt.figure(figsize=(10, 6))
+
     sns.lineplot(
         data=subset,
         x="density",
         y="gflops",
         hue="algo",
-        marker="o"
+        marker="o",
+        linewidth=2,
+        alpha=0.8
     )
+
+    # Highlight the baseline: cuSPARSE
+    cus = subset[subset["algo"] == "cuSPARSE"]
+    if not cus.empty:
+        sns.lineplot(
+            data=cus,
+            x="density",
+            y="gflops",
+            marker="o",
+            linewidth=4,
+            color="black",
+            label="cuSPARSE"
+        )
+
     plt.title(f"SpMM Performance for Size: {case}")
     plt.xlabel("Density")
     plt.ylabel("GFLOPS")
     plt.grid(True, linestyle="--", alpha=0.5)
-    plt.legend(title="Algorithm")
     plt.tight_layout()
 
-    plt.savefig(f"csrspmm_{case}.png", dpi=300)
+    handles, labels = plt.gca().get_legend_handles_labels()
+    unique = dict(zip(labels, handles))
+    plt.legend(unique.values(), unique.keys(), title="Algorithm")
 
+    plt.savefig(f"csrspmm_{case}.png", dpi=300)
     plt.show()
     plt.close()
-
-
