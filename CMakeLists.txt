@@ -102,3 +102,11 @@ target_link_libraries(bench_cusparse PRIVATE
 set_target_properties(bench_cusparse PROPERTIES
     CUDA_SEPARABLE_COMPILATION ON
 )
+
+
+configure_file(
+    ${CMAKE_SOURCE_DIR}/benchmarks/exp1.sh
+    ${CMAKE_BINARY_DIR}/exp1.sh
+    COPYONLY
+)
+

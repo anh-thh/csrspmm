@@ -45,7 +45,7 @@ int main (int argc, char** argv) {
                 "  -a <float>    alpha scalar\n"
                 "  -b <float>    beta scalar\n"
                 "Example:\n"
-                "  ./bench_csr_cusparse -M 4096 -N 4096 -K 256 -s 0.999\n";
+                "  ./bench_cusparse -M 4096 -N 4096 -K 256 -s 0.999\n";
             return 0;
         }
 
