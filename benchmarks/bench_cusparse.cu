@@ -16,6 +16,21 @@
 #define WARMUP 200
 #define REPS 1000
 
+cusparseSpMMAlg_t parse_cusparse_spmm_alg(const std::string& s)
+{
+    if (s == "default")  return CUSPARSE_SPMM_ALG_DEFAULT;
+    if (s == "coo_alg1")     return CUSPARSE_SPMM_COO_ALG1;
+    if (s == "coo_alg2")     return CUSPARSE_SPMM_COO_ALG2;
+    if (s == "coo_alg3")     return CUSPARSE_SPMM_COO_ALG3;
+    if (s == "coo_alg4")     return CUSPARSE_SPMM_COO_ALG4;
+    if (s == "csr_alg1")    return CUSPARSE_SPMM_CSR_ALG1;
+    if (s == "csr_alg2")    return CUSPARSE_SPMM_CSR_ALG2;
+    if (s == "csr_alg3")    return CUSPARSE_SPMM_CSR_ALG3;
+
+    std::cerr << "Unknown cuSPARSE SpMM algorithm: '" << s << "'.\n";
+    std::exit(1);
+}
+
 int main (int argc, char** argv) {
     int M = 1024;
     int N = 1024;
@@ -23,6 +38,10 @@ int main (int argc, char** argv) {
     float sparsity = 0.7;
     float alpha = 1.0f;
     float beta  = 0.5f;
+
+    std::string algo_str = "csr_alg2";
+    // NOTE: This alg is refered as providing the best performance with row-major layout
+    // see https://docs.nvidia.com/cuda/cusparse/generic-api/generic-api-functions.html
 
     // parse args
     for (int i = 1; i < argc; ++i) {
@@ -34,6 +53,7 @@ int main (int argc, char** argv) {
         else if ((arg == "-s") && i+1 < argc) sparsity = std::atof(argv[++i]);
         else if ((arg == "-a") && i+1 < argc) alpha    = std::atof(argv[++i]);
         else if ((arg == "-b") && i+1 < argc) beta     = std::atof(argv[++i]);
+        else if (arg == "-algo" && i+1 < argc) algo_str = argv[++i];
 
         else if (arg == "-h" || arg == "--help") {
             std::cout <<
@@ -44,8 +64,12 @@ int main (int argc, char** argv) {
                 "  -s <float>    sparsity (0.0 - 1.0)\n"
                 "  -a <float>    alpha scalar\n"
                 "  -b <float>    beta scalar\n"
+                "  -algo <name>  cuSPARSE SpMM algorithm\n"
+                "Available algorithms:\n"
+                "   default, csr_alg1, csr_alg2, csr_alg3,\n"
+                "   coo_alg1, coo_alg2, coo_alg3, coo_alg4\n"
                 "Example:\n"
-                "  ./bench_cusparse -M 4096 -N 4096 -K 256 -s 0.999\n";
+                "  ./bench_cusparse -M 4096 -N 4096 -K 256 -s 0.999 -algo csr_alg2\n";
             return 0;
         }
 
@@ -55,6 +79,7 @@ int main (int argc, char** argv) {
         }
     }    
     
+    cusparseSpMMAlg_t alg = parse_cusparse_spmm_alg(algo_str);
     
     // csrspmm::Algorithm algo = csrspmm::parse_algorithm(algo_str);
     bool is_int = false;
@@ -125,7 +150,7 @@ int main (int argc, char** argv) {
         &beta,
         matC,
         CUDA_R_32F,
-        CUSPARSE_SPMM_ALG_DEFAULT,
+        alg,
         &bufferSize));
     if (bufferSize > 0) cudaCheck(cudaMalloc(&dBuffer, bufferSize));
 
@@ -141,7 +166,7 @@ int main (int argc, char** argv) {
             &beta,
             matC,
             CUDA_R_32F,
-            CUSPARSE_SPMM_ALG_DEFAULT,
+            alg,
             dBuffer));
     }
     cudaCheck(cudaDeviceSynchronize());
@@ -165,7 +190,7 @@ int main (int argc, char** argv) {
             &beta,
             matC,
             CUDA_R_32F,
-            CUSPARSE_SPMM_ALG_DEFAULT,
+            alg,
             dBuffer));
         cudaCheck(cudaDeviceSynchronize());
     }
