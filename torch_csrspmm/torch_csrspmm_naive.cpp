@@ -1,5 +1,6 @@
 #include <torch/extension.h>
 #include <iostream>
+#include <c10/cuda/CUDAStream.h>
 
 // ---- CSRSMPMM HEADERS (from include/csrspmm/*.h) ----
 #include "csrspmm/matrix.h"
@@ -32,7 +33,9 @@ torch::Tensor csrspmm_naive_forward(
     int K = B.size(0);       // input width = A.width
 
     // ---- Allocate output tensor ----
-    Tensor C = torch::zeros({M, N}, B.options());
+    Tensor C = (beta == 0.0f)
+        ? torch::empty({M, N}, B.options())
+        : torch::zeros({M, N}, B.options());
 
     // ---- Build CSRMatrix for A ----
     csrspmm::CSRMatrix dA;

@@ -33,7 +33,7 @@ def initialize_matrices(M, N, K, sparsity=0.7):
 # ----------------------------------------------------------------------
 # Generic timer
 # ----------------------------------------------------------------------
-def run_benchmark(fn, *args, n_warmup=200, iterations=2000, **kwargs):
+def run_benchmark(fn, *args, n_warmup=10, iterations=100, **kwargs):
     # warmup
     for _ in range(n_warmup):
         fn(*args, **kwargs)
@@ -100,13 +100,13 @@ def report(name, times):
 # ======================================================================
 if __name__ == "__main__":
 
-    M, N, K = 1024, 2048, 128
-    alpha = 1.0
+    M, N, K = 4096, 4096, 128 
+    alpha = 1.1
     beta = 0.5
-    sparsity = 0.9
+    sparsity = 0.90
 
-    n_warmup = 10
-    iterations = 200
+    n_warmup = 200
+    iterations = 2000
 
     print("\n---- Running Benchmarks ----")
 

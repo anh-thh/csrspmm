@@ -27,7 +27,9 @@ torch::Tensor csrspmm_warp_per_row_forward(
     int K = B.size(0);
     int N = B.size(1);
 
-    Tensor C = torch::zeros({M, N}, B.options());
+    Tensor C = (beta == 0.0f)
+        ? torch::empty({M, N}, B.options())
+        : torch::zeros({M, N}, B.options());
 
     csrspmm::CSRMatrix dA;
     dA.height  = M;

@@ -48,18 +48,26 @@ include_dirs = [
 extra_compile_args = {
     "cxx": [
         "-O3",
+        "-march=native",
+        "-ffast-math",
     ],
     "nvcc": [
         "-O3",
+        "--use_fast_math",
         "--expt-relaxed-constexpr",
+
         "-D__CUDA_NO_HALF_OPERATORS__",
         "-D__CUDA_NO_HALF_CONVERSIONS__",
         "-D__CUDA_NO_BFLOAT16_CONVERSIONS__",
         "-D__CUDA_NO_HALF2_OPERATORS__",
 
-        # VLAB GPUs usually = Turing (sm_75)
+        # Architectures
+        "-gencode=arch=compute_70,code=sm_70",
         "-gencode=arch=compute_75,code=sm_75",
-        "-gencode=arch=compute_75,code=compute_75",
+        "-gencode=arch=compute_80,code=sm_80",
+        "-gencode=arch=compute_86,code=sm_86",
+        "-gencode=arch=compute_89,code=sm_89",
+        "-gencode=arch=compute_90,code=sm_90",
     ],
 }
 

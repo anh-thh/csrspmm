@@ -110,3 +110,9 @@ configure_file(
     COPYONLY
 )
 
+configure_file(
+    ${CMAKE_SOURCE_DIR}/benchmarks/csrspmm_vs_cusparse.py
+    ${CMAKE_BINARY_DIR}/csrspmm_vs_cusparse.py
+    COPYONLY
+)
+
