@@ -103,18 +103,19 @@ if __name__ == "__main__":
     A, B, C, A_csr = initialize_matrices(M, N, K, sparsity)
 
     # Torch baselines
-    t_mm = run_benchmark(fn_torch_sparse_mm,
-                         alpha, A_csr, beta, B, C,
-                         n_warmup=n_warmup, iterations=iterations)
-
-    t_addmm = run_benchmark(fn_torch_sparse_addmm,
-                            alpha, A_csr, beta, B, C,
-                            n_warmup=n_warmup, iterations=iterations)
-
-    # Custom CUDA kernel
-    t_custom = run_benchmark(fn_custom_naive,
+    with torch.no_grad():
+        t_mm = run_benchmark(fn_torch_sparse_mm,
                              alpha, A_csr, beta, B, C,
                              n_warmup=n_warmup, iterations=iterations)
+
+        t_addmm = run_benchmark(fn_torch_sparse_addmm,
+                                alpha, A_csr, beta, B, C,
+                                n_warmup=n_warmup, iterations=iterations)
+
+        # Custom CUDA kernel
+        t_custom = run_benchmark(fn_custom_naive,
+                                 alpha, A_csr, beta, B, C,
+                                 n_warmup=n_warmup, iterations=iterations)
 
     print("\n---- Results ----")
     report("torch.sparse.mm", t_mm)
