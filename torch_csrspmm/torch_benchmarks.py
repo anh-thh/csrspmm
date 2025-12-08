@@ -1,145 +1,138 @@
 import torch
 import time
+import csv
 import numpy as np
-import torch_csrspmm   # your custom CUDA extension
+import torch_csrspmm
+
+DEVICE = torch.device("cuda")
+
+# -------------------------------------------------------------
+# CONFIGS
+# -------------------------------------------------------------
+CONFIGS = [
+    ("small",  512, 1024, 64),
+    ("medium", 1024, 2048, 128),
+    ("large",  4096, 4096, 128),
+    ("XL",     8192, 4096, 256),
+]
+
+DENSITIES = [0.01, 0.05, 0.10, 0.20, 0.30]  
+SPARSITIES = [0.99, 0.95, 0.90, 0.80, 0.70] 
+assert len(DENSITIES) == len(SPARSITIES)
 
 
-print(f"PyTorch version: {torch.__version__}")
-
-if not torch.cuda.is_available():
-    raise RuntimeError("CUDA is not available. This benchmark requires a GPU.")
-else:
-    torch.cuda.init()
-    DEVICE = torch.device("cuda")
-    print("Running benchmark on GPU:", torch.cuda.get_device_name(0))
-
-
-# ----------------------------------------------------------------------
-# Helper: initialize random sparse CSR + dense B
-# ----------------------------------------------------------------------
-def initialize_matrices(M, N, K, sparsity=0.7):
-    A = torch.rand(M, K, device=DEVICE, dtype=torch.float32)
-    mask = torch.rand_like(A) > sparsity
-    A = A * mask
-
-    B = torch.rand(K, N, device=DEVICE, dtype=torch.float32)
-    C = torch.zeros(M, N, device=DEVICE, dtype=torch.float32)
-
+# -------------------------------------------------------------
+# helpers
+# -------------------------------------------------------------
+def initialize_matrices(M, N, K, sparsity):
+    density = 1 - sparsity
+    A = (torch.rand(M, K, device=DEVICE) < density).float() * torch.rand(M, K, device=DEVICE)
+    B = torch.rand(K, N, device=DEVICE)
+    C = torch.zeros(M, N, device=DEVICE)
     A_csr = A.to_sparse_csr()
-
     return A, B, C, A_csr
 
 
-# ----------------------------------------------------------------------
-# Generic timer
-# ----------------------------------------------------------------------
-def run_benchmark(fn, *args, n_warmup=10, iterations=100, **kwargs):
-    # warmup
-    for _ in range(n_warmup):
-        fn(*args, **kwargs)
-        torch.cuda.synchronize()
-
-    latencies = []
-    for _ in range(iterations):
-        t0 = time.time()
-        fn(*args, **kwargs)
-        torch.cuda.synchronize()
-        latencies.append(time.time() - t0)
-
-    return latencies
-
-
-# ----------------------------------------------------------------------
-# Baseline PyTorch ops
-# ----------------------------------------------------------------------
-def fn_torch_sparse_mm(alpha, A_csr, beta, B, C):
-    return alpha * torch.sparse.mm(A_csr, B) + beta * C
-
-
-def fn_torch_sparse_addmm(alpha, A_csr, beta, B, C):
-    return torch.sparse.addmm(C, A_csr, B, beta=beta, alpha=alpha)
-
-
-# ----------------------------------------------------------------------
-# Our custom CUDA kernel (naive)
-# ----------------------------------------------------------------------
 def extract_csr(A_csr):
     row = A_csr.crow_indices().to(torch.int32)
-    col  = A_csr.col_indices().to(torch.int32)
-    val  = A_csr.values()  # float32
+    col = A_csr.col_indices().to(torch.int32)
+    val = A_csr.values()
     return row, col, val
 
-def fn_custom_naive(alpha, A_csr, beta, B, C):
-    A_row_ptr, A_col_idx, A_values = extract_csr(A_csr)
-    C_tmp = torch_csrspmm.csrspmm_naive(A_row_ptr, A_col_idx, A_values, B, alpha, beta)
-    return C_tmp
+
+def time_fn(fn, *args, n_warmup=20, iters=100):
+    for _ in range(n_warmup):
+        fn(*args)
+        torch.cuda.synchronize()
+
+    t_list = []
+    for _ in range(iters):
+        t0 = time.time()
+        fn(*args)
+        torch.cuda.synchronize()
+        t_list.append(time.time() - t0)
+
+    return np.mean(t_list)
 
 
-def fn_custom_warp_per_row(alpha, A_csr, beta, B, C):
-    A_row_ptr, A_col_idx, A_values = extract_csr(A_csr)
-    C_tmp = torch_csrspmm.csrspmm_warp_per_row(A_row_ptr, A_col_idx, A_values, B, alpha, beta)
-    return C_tmp
-
-def fn_custom_warp_per_row_fp4(alpha, A_csr, beta, B, C):
-    A_row_ptr, A_col_idx, A_values = extract_csr(A_csr)
-    C_tmp = torch_csrspmm.csrspmm_warp_per_row_fp4(A_row_ptr, A_col_idx, A_values, B, alpha, beta)
-    return C_tmp
-
-    
-# ----------------------------------------------------------------------
-# Reporting helper
-# ----------------------------------------------------------------------
-def report(name, times):
-    avg = np.mean(times) * 1000
-    std = np.std(times) * 1000
-    print(f"{name:<32}: {avg:8.3f} ms  +/- {std:6.3f}")
+def count_gflops(nnz, N, time_s):
+    flops = 2 * nnz * N
+    return flops / time_s / 1e9
 
 
-# ======================================================================
-# MAIN
-# ======================================================================
-if __name__ == "__main__":
+# -------------------------------------------------------------
+# Kernels
+# -------------------------------------------------------------
+def fn_torch_mm(alpha, A_csr, beta, B, C):
+    return alpha * torch.sparse.mm(A_csr, B) + beta * C
 
-    M, N, K = 4096, 4096, 128 
+def fn_torch_addmm(alpha, A_csr, beta, B, C):
+    return torch.sparse.addmm(C, A_csr, B, beta=beta, alpha=alpha)
+
+def fn_naive(alpha, row, col, val, B, beta, C):
+    return torch_csrspmm.csrspmm_naive(row, col, val, B, alpha, beta)
+
+def fn_warp_per_row(alpha, row, col, val, B, beta, C):
+    return torch_csrspmm.csrspmm_warp_per_row(row, col, val, B, alpha, beta)
+
+def fn_warp_per_row_fp4(alpha, row, col, val, B, beta, C):
+    return torch_csrspmm.csrspmm_warp_per_row_fp4(row, col, val, B, alpha, beta)
+
+
+def main():
+
     alpha = 1.1
     beta = 0.5
-    sparsity = 0.90
 
-    n_warmup = 200
-    iterations = 2000
+    results = []  # store dict rows
 
-    print("\n---- Running Benchmarks ----")
+    for (case, M, N, K) in CONFIGS:
+        for density, sparsity in zip(DENSITIES, SPARSITIES):
 
-    A, B, C, A_csr = initialize_matrices(M, N, K, sparsity)
+            print(f"\n===== Case {case}, M={M}, N={N}, K={K}, density={density:.2f} =====")
 
-    with torch.no_grad():
-        # Torch baselines
-        t_mm = run_benchmark(fn_torch_sparse_mm,
-                             alpha, A_csr, beta, B, C,
-                             n_warmup=n_warmup, iterations=iterations)
+            A, B, C, A_csr = initialize_matrices(M, N, K, sparsity)
+            nnz = A_csr.values().numel()
 
-        t_addmm = run_benchmark(fn_torch_sparse_addmm,
-                                alpha, A_csr, beta, B, C,
-                                n_warmup=n_warmup, iterations=iterations)
+            # extract CSR once
+            row, col, val = extract_csr(A_csr)
 
-        # Custom CUDA kernel
-        t_custom_naive = run_benchmark(fn_custom_naive,
-                                 alpha, A_csr, beta, B, C,
-                                 n_warmup=n_warmup, iterations=iterations)
+            # running benchmarks
+            timings = {
+                "torch.mm": time_fn(fn_torch_mm, alpha, A_csr, beta, B, C),
+                "torch.addmm": time_fn(fn_torch_addmm, alpha, A_csr, beta, B, C),
+                "naive": time_fn(fn_naive, alpha, row, col, val, B, beta, C),
+                "warp_per_row": time_fn(fn_warp_per_row, alpha, row, col, val, B, beta, C),
+                "warp_per_row_fp4": time_fn(fn_warp_per_row_fp4, alpha, row, col, val, B, beta, C),
+            }
 
-        t_custom_warp_per_row = run_benchmark(fn_custom_warp_per_row,
-                                 alpha, A_csr, beta, B, C,
-                                 n_warmup=n_warmup, iterations=iterations)
+            for algo, t in timings.items():
+                gflops = count_gflops(nnz, N, t)
 
-        t_custom_warp_per_row_fp4 = run_benchmark(fn_custom_warp_per_row_fp4,
-                                 alpha, A_csr, beta, B, C,
-                                 n_warmup=n_warmup, iterations=iterations)
+                results.append({
+                    "case": case,
+                    "M": M, "N": N, "K": K,
+                    "density": density,
+                    "sparsity": sparsity,
+                    "lib": "torch" if "torch" in algo else "custom",
+                    "algo": algo,
+                    "gflops": gflops
+                })
 
-    print("\n---- Results ----")
-    report("torch.sparse.mm", t_mm)
-    report("torch.sparse.addmm", t_addmm)
-    report("torch_csrspmm_naive", t_custom_naive)
-    report("torch_csrspmm_warp_per_row", t_custom_warp_per_row)
-    report("torch_csrspmm_warp_per_row_fp4", t_custom_warp_per_row_fp4)
+                print(f"{algo:<15}: {gflops:8.2f} GFLOP/s")
 
-    print("\nBenchmark completed.")
+
+    csv_path = "csrspmm_vs_torchsparse.csv"
+    with open(csv_path, "w", newline="") as f:
+        writer = csv.DictWriter(f,
+            fieldnames=["case","M","N","K","density","sparsity","lib","algo","gflops"])
+        writer.writeheader()
+        writer.writerows(results)
+
+    print(f"\nSaved results to: {csv_path}")
+
+
+# Run main
+if __name__ == "__main__":
+    main()
+
