@@ -15,7 +15,9 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
 
 # Change this to your CUDA architecture (for better compiler optmizatiom)
-set(CMAKE_CUDA_ARCHITECTURES 70 75 80 86 89 90)
+# set(CMAKE_CUDA_ARCHITECTURES 70 75 80 86 89 90)
+# set(CMAKE_CUDA_ARCHITECTURES "70;75;80;86;89;90")
+set(CMAKE_CUDA_ARCHITECTURES "89")
 
 # ------------- Optimization Flags -----------
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=native -ffast-math")
@@ -29,6 +31,9 @@ set(CMAKE_CUDA_FLAGS_DEBUG "-O0 -G -g")
 include_directories(${PROJECT_SOURCE_DIR}/include)
 include_directories(${PROJECT_SOURCE_DIR}/src/device)
 include_directories(${PROJECT_SOURCE_DIR}/src/host)
+
+include_directories(/usr/local/cuda/include)
+link_directories(/usr/local/cuda/lib64)
 
 # ------------ SOURCES --------------------
 file(GLOB HOST_CPP_SRCS
@@ -113,6 +118,12 @@ configure_file(
 configure_file(
     ${CMAKE_SOURCE_DIR}/benchmarks/csrspmm_vs_cusparse.py
     ${CMAKE_BINARY_DIR}/csrspmm_vs_cusparse.py
+    COPYONLY
+)
+
+configure_file(
+    ${CMAKE_SOURCE_DIR}/benchmarks/profile_kernels.sh
+    ${CMAKE_BINARY_DIR}/profile_kernels.sh
     COPYONLY
 )
 
