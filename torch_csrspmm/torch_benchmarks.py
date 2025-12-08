@@ -84,12 +84,12 @@ def main():
     alpha = 1.1
     beta = 0.5
 
-    results = []  # store dict rows
+    results = []
 
     for (case, M, N, K) in CONFIGS:
         for density, sparsity in zip(DENSITIES, SPARSITIES):
 
-            print(f"\n===== Case {case}, M={M}, N={N}, K={K}, density={density:.2f} =====")
+            print(f"\n===== {case} M={M} N={N} K={K} density={density:.2f} (sparsity={sparsity:.2f}) =====")
 
             A, B, C, A_csr = initialize_matrices(M, N, K, sparsity)
             nnz = A_csr.values().numel()
