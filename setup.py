@@ -9,18 +9,21 @@ print(">>> PROJECT ROOT =", PROJECT_ROOT)
 # SOURCES
 # --------------------------------------------------
 sources = [
-    # Torch bindings
+    # Torch bindings (Python → C++ wrappers)
     str(PROJECT_ROOT / "torch_csrspmm" / "binding.cpp"),
     str(PROJECT_ROOT / "torch_csrspmm" / "torch_csrspmm_naive.cpp"),
     str(PROJECT_ROOT / "torch_csrspmm" / "torch_csrspmm_naive_shared.cpp"),
     str(PROJECT_ROOT / "torch_csrspmm" / "torch_csrspmm_warp_per_row.cpp"),
+    str(PROJECT_ROOT / "torch_csrspmm" / "torch_csrspmm_warp_per_row_fp4.cpp"),
+    str(PROJECT_ROOT / "torch_csrspmm" / "torch_csrspmm_warp_per_row_smem.cpp"),
+    str(PROJECT_ROOT / "torch_csrspmm" / "torch_csrspmm_warp_per_row_smem_fp4.cpp"),
 
     # Host utilities
     str(PROJECT_ROOT / "src" / "host" / "csr_utils.cpp"),
     str(PROJECT_ROOT / "src" / "host" / "dense_utils.cpp"),
     str(PROJECT_ROOT / "src" / "host" / "spmm_launcher.cu"),
 
-    # Device kernels
+    # CUDA kernels
     str(PROJECT_ROOT / "src" / "device" / "csrspmm_naive.cu"),
     str(PROJECT_ROOT / "src" / "device" / "csrspmm_naive_shared.cu"),
     str(PROJECT_ROOT / "src" / "device" / "csrspmm_warp_per_row.cu"),
@@ -42,9 +45,7 @@ include_dirs = [
 # Compile flags
 # --------------------------------------------------
 extra_compile_args = {
-    "cxx": [
-        "-O3",
-    ],
+    "cxx": ["-O3"],
     "nvcc": [
         "-O3",
         "--expt-relaxed-constexpr",
@@ -53,6 +54,7 @@ extra_compile_args = {
         "-D__CUDA_NO_BFLOAT16_CONVERSIONS__",
         "-D__CUDA_NO_HALF2_OPERATORS__",
 
+        # Your GPU arch (sm_75 for Turing, update if needed)
         "-gencode=arch=compute_75,code=sm_75",
         "-gencode=arch=compute_75,code=compute_75",
     ],
@@ -71,7 +73,7 @@ ext_modules = [
 ]
 
 # --------------------------------------------------
-# Setup
+# SETUP
 # --------------------------------------------------
 setup(
     name="torch_csrspmm",
