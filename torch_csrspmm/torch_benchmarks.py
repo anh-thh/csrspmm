@@ -85,6 +85,8 @@ def fn_warp_per_row_smem(alpha, row, col, val, max_row_nnz, B, beta, C):
 def fn_warp_per_row_fp4(alpha, row, col, val, B, beta, C):
     return torch_csrspmm.csrspmm_warp_per_row_fp4(row, col, val, B, alpha, beta)
 
+def fn_warp_per_row_smem_fp4(alpha, row, col, val, max_row_nnz, B, beta, C):
+    return torch_csrspmm.csrspmm_warp_per_row_smem_fp4(row, col, val, max_row_nnz, B, alpha, beta)
 
 def main():
     alpha = 1.1
@@ -109,6 +111,7 @@ def main():
                 "WarpPerRow": time_fn(fn_warp_per_row, alpha, row, col, val, B, beta, C),
                 "WarpPerRowSmem": time_fn(fn_warp_per_row_smem, alpha, row, col, val, max_row_nnz, B, beta, C),
                 "WarpPerRowFp4": time_fn(fn_warp_per_row_fp4, alpha, row, col, val, B, beta, C),
+                "WarpPerRowSmemFp4": time_fn(fn_warp_per_row_smem_fp4, alpha, row, col, val, max_row_nnz, B, beta, C),
             }
 
             for algo, t in timings.items():

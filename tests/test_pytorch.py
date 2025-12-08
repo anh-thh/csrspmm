@@ -66,6 +66,8 @@ def run_single_test(M, N, K, device, algo="naive"):
         C1 = torch_csrspmm.csrspmm_warp_per_row_smem(crow, col, val, max_row_nnz, B, alpha, beta)
     elif algo == "WarpPerRowFp4": 
         C1 = torch_csrspmm.csrspmm_warp_per_row_fp4(crow, col, val, B, alpha, beta)
+    elif algo == "WarpPerRowSmemFp4": 
+        C1 = torch_csrspmm.csrspmm_warp_per_row_smem_fp4(crow, col, val, max_row_nnz, B, alpha, beta)
     else: 
         raise NotImplementedError("Algorithm currently not supported")
 
@@ -89,7 +91,7 @@ def main():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print("Using device:", device)
     
-    algos = ["naive", "WarpPerRow", "WarpPerRowSmem", "WarpPerRowFp4"]
+    algos = ["naive", "WarpPerRow", "WarpPerRowSmem", "WarpPerRowFp4", "WarpPerRowSmemFp4"]
     for algo in algos:
         # ---- Small tests ----
         run_single_test(4, 4, 8, device, algo)

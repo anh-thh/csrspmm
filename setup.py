@@ -18,6 +18,7 @@ sources = [
     str(PROJECT_ROOT / "torch_csrspmm" / "torch_csrspmm_warp_per_row.cpp"),
     str(PROJECT_ROOT / "torch_csrspmm" / "torch_csrspmm_warp_per_row_smem.cpp"),
     str(PROJECT_ROOT / "torch_csrspmm" / "torch_csrspmm_warp_per_row_fp4.cpp"),
+    str(PROJECT_ROOT / "torch_csrspmm" / "torch_csrspmm_warp_per_row_smem_fp4.cpp"),
 
     # Host utilities
     str(PROJECT_ROOT / "src" / "csrspmm.cpp"),
