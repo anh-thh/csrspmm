@@ -1,0 +1,5 @@
+==PROF== Connected to process 30344 (/home/anhthh/Upenn/Fall25/cis6010_prj/build/bench_csrspmm)
+==PROF== Profiling "csrspmm_naive" - 0 (1/1): 0%....50%....100% - 44 passes
+Naive krnl: avg elapsed time: (0.006300) s, performance: ( 272.65) GFLOPS. size: [8192 x 4096 x 256]
+==PROF== Disconnected from process 30344
+==PROF== Report: /home/anhthh/Upenn/Fall25/cis6010_prj/build/./ncu_profiles/profile_Naive.ncu-rep

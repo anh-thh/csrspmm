@@ -1,0 +1,5 @@
+==PROF== Connected to process 30631 (/home/anhthh/Upenn/Fall25/cis6010_prj/build/bench_csrspmm)
+==PROF== Profiling "csrspmm_warp_per_row_fp4" - 0 (1/1): 0%....50%....100% - 44 passes
+WarpPerRowFp4 krnl: avg elapsed time: (0.005373) s, performance: ( 319.64) GFLOPS. size: [8192 x 4096 x 256]
+==PROF== Disconnected from process 30631
+==PROF== Report: /home/anhthh/Upenn/Fall25/cis6010_prj/build/./ncu_profiles/profile_WarpPerRowFp4.ncu-rep
