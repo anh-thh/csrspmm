@@ -45,14 +45,14 @@ for cfg in "${CONFIGS[@]}"; do
     # custom CSR kernels
     for ALGO in "${CSR_ALGOS[@]}"; do
       echo "Running $ALGO"
-      OUT=$(./bench_csrspmm -M "$M" -N "$N" -K "$K" -s "$SPAR" -a 1.0 -b 0.0 -algo "$ALGO")
+      OUT=$(./bench_csrspmm -M "$M" -N "$N" -K "$K" -s "$SPAR" -algo "$ALGO")
       GFLOPS=$(printf '%s\n' "$OUT" | get_gflops)
       echo "$NAME,$M,$N,$K,$DENS,$SPAR,csrspmm,$ALGO,$GFLOPS" >> "$OUT_FILE"
     done
 
     # cuSPARSE baseline
     echo "Running cuSPARSE"
-    OUT=$(./bench_cusparse -M "$M" -N "$N" -K "$K" -s "$SPAR" -a 1.0 -b 0.0)
+    OUT=$(./bench_cusparse -M "$M" -N "$N" -K "$K" -s "$SPAR")
     GFLOPS=$(printf '%s\n' "$OUT" | get_gflops)
     echo "$NAME,$M,$N,$K,$DENS,$SPAR,cuSPARSE,cuSPARSE,$GFLOPS" >> "$OUT_FILE"
   done
