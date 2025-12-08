@@ -2,6 +2,9 @@ import torch
 import time
 import csv
 import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
 import torch_csrspmm
 
 DEVICE = torch.device("cuda")
@@ -80,7 +83,6 @@ def fn_warp_per_row_fp4(alpha, row, col, val, B, beta, C):
 
 
 def main():
-
     alpha = 1.1
     beta = 0.5
 
@@ -94,10 +96,8 @@ def main():
             A, B, C, A_csr = initialize_matrices(M, N, K, sparsity)
             nnz = A_csr.values().numel()
 
-            # extract CSR once
             row, col, val = extract_csr(A_csr)
 
-            # running benchmarks
             timings = {
                 "torch.mm": time_fn(fn_torch_mm, alpha, A_csr, beta, B, C),
                 "torch.addmm": time_fn(fn_torch_addmm, alpha, A_csr, beta, B, C),
@@ -116,23 +116,77 @@ def main():
                     "sparsity": sparsity,
                     "lib": "torch" if "torch" in algo else "custom",
                     "algo": algo,
-                    "gflops": gflops
+                    "gflops": gflops,
                 })
 
-                print(f"{algo:<15}: {gflops:8.2f} GFLOP/s")
+                print(f"{algo:<18}: {gflops:8.2f} GFLOP/s")
 
 
+    # save to .csv
     csv_path = "csrspmm_vs_torchsparse.csv"
     with open(csv_path, "w", newline="") as f:
-        writer = csv.DictWriter(f,
-            fieldnames=["case","M","N","K","density","sparsity","lib","algo","gflops"])
+        writer = csv.DictWriter(
+            f,
+            fieldnames=["case","M","N","K","density","sparsity","lib","algo","gflops"]
+        )
         writer.writeheader()
         writer.writerows(results)
 
     print(f"\nSaved results to: {csv_path}")
 
 
-# Run main
+    # Visualization + Summary ----------------
+    df = pd.DataFrame(results)
+
+    sns.set(style="whitegrid", font_scale=1.2)
+
+    for case in df["case"].unique():
+        subset = df[df["case"] == case]
+
+        plt.figure(figsize=(10, 6))
+
+        sns.lineplot(
+            data=subset,
+            x="density",
+            y="gflops",
+            hue="algo",
+            marker="o",
+            linewidth=2,
+            alpha=0.8
+        )
+
+        plt.title(f"SpMM Performance for Size: {case}")
+        plt.xlabel("Density")
+        plt.ylabel("GFLOPS")
+        plt.grid(True, linestyle="--", alpha=0.5)
+        plt.tight_layout()
+
+        handles, labels = plt.gca().get_legend_handles_labels()
+        unique = dict(zip(labels, handles))
+        plt.legend(unique.values(), unique.keys(), title="Algorithm")
+
+        outfile = f"torchcsrspmm_{case}.png"
+        plt.savefig(outfile, dpi=300)
+        plt.close()
+
+    print("\n========= Summary =========")
+
+    mean_gflops = df.groupby("algo")["gflops"].mean().rename("mean_gflops")
+
+    cus = df[df["algo"] == "torch.mm"][["case", "density", "gflops"]]
+    cus = cus.rename(columns={"gflops": "cusparse_gflops"})
+
+    merged = df.merge(cus, on=["case", "density"], how="left")
+    merged["speedup"] = merged["gflops"] / merged["cusparse_gflops"]
+
+    mean_speedup = merged.groupby("algo")["speedup"].mean().rename("mean_speedup")
+
+    summary = pd.concat([mean_gflops, mean_speedup], axis=1)
+    summary = summary.sort_values("mean_gflops", ascending=False)
+
+    print(summary.to_string())
+
+
 if __name__ == "__main__":
     main()
 
