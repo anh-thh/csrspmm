@@ -49,7 +49,7 @@ Note that you can adjust the compiler flags and target architecture in `CMakeLis
 ### 4.1 Compare against `cuSPARSE`:
 ```
 cd build/
-python ../benchmarks/csrspmm_vs_cusparse.py
+python csrspmm_vs_cusparse.py
 ```
 
 ### 4.2 Compare against `torch.sparse`
