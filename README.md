@@ -1,4 +1,4 @@
-# CSRSPMM: CUDA Sparse x Dense Matrix Multiplication
+# CSRSPMM: Optimized CUDA Kernels for Sparse x Dense Matrix Multiplication
 **CSRSPMM** is a high-performance library for multiplying Compressed Sparse Row (CSR) matrices with dense matrices on NVIDIA GPUs. It includes a generic CUDA backend, and a PyTorch extension for easy integration into deep learning workflows.
 
 ## 1. Project Structure
