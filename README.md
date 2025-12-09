@@ -43,6 +43,7 @@ cd build
 cmake ..
 make -j
 ```
+Note that you can adjust the compiler flags and target architecture in `CMakeLists.txt` to fit your machine.
 
 ## 4. Running Benchmarks
 ### 4.1 Compare Against cuSPARSE:
