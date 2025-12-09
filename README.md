@@ -20,15 +20,19 @@
 
 
 ## 2. Requirements
-CUDA
+**CUDA**
 - CUDA Toolkit 12.0+ (tested heavily with CUDA 13.0)
 - Latest NVIDIA driver matching your toolkit
 - GPU with compute capability 7.0+ (Turing, Ampere, Ada, Hopper recommended)
 
-Python (for PyTorch benchmarks)
+**Python** (for PyTorch benchmarks)
 - Python 3.10+
 - PyTorch with CUDA support (follow the [official PyTorch installation instructions](https://pytorch.org/get-started/locally/))
-
+- These following packages are also requires for plotting and utilities: `matplotlib`, `pandas`, `numpy`, `seaborn`, `setuptool`.
+To install our `torch_csrspmm` extension to you environment, run this (from the project root)
+```
+pip install -e .
+```
 
 ## 3. Build Instructions
 From the project root:
@@ -47,9 +51,6 @@ python ../benchmarks/csrspmm_vs_cusparse.py
 ```
 
 ### 4.2 Compare Against `torch.sparse`
-First install the PyTorch extension (from the project root)
-```
-pip install -e .
 ```
 Run 
 ```
