@@ -46,13 +46,13 @@ make -j
 Note that you can adjust the compiler flags and target architecture in `CMakeLists.txt` to fit your machine.
 
 ## 4. Running Benchmarks
-### 4.1 Compare Against `cuSPARSE`:
+### 4.1 Compare against `cuSPARSE`:
 ```
 cd build/
 python ../benchmarks/csrspmm_vs_cusparse.py
 ```
 
-### 4.2 Compare Against `torch.sparse`
+### 4.2 Compare against `torch.sparse`
 ```
 python torch_csrspmm/torch_benchmarks.py
 ```
