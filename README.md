@@ -57,7 +57,7 @@ python ../benchmarks/csrspmm_vs_cusparse.py
 python torch_csrspmm/torch_benchmarks.py
 ```
 
-### 4.3 Profiling Kernels with Nsight Compute
+### 4.3 Profiling kernels with Nsight Compute
 To generate `.ncu-rep` reports for each kernel 
 ```
 cd build/
