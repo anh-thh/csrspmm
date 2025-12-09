@@ -51,7 +51,6 @@ python ../benchmarks/csrspmm_vs_cusparse.py
 ```
 
 ### 4.2 Compare Against `torch.sparse`
-```
 Run 
 ```
 python torch_csrspmm/torch_benchmarks.py
