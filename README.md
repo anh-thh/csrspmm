@@ -1,7 +1,7 @@
 # CSRSPMM: CUDA Sparse x Dense Matrix Multiplication
 
 
-## Project Structure
+## 1. Project Structure
 
 ```
 .
@@ -19,7 +19,7 @@
 **Note**: The project structure may evolve as more kernels and features are added.
 
 
-## Requirements
+## 2. Requirements
 CUDA
 - CUDA Toolkit 12.0+ (tested heavily with CUDA 13.0)
 - Latest NVIDIA driver matching your toolkit
@@ -30,7 +30,7 @@ Python (for PyTorch benchmarks)
 - PyTorch with CUDA support (follow the [official PyTorch installation instructions](https://pytorch.org/get-started/locally/))
 
 
-## Build Instructions
+## 3. Build Instructions
 From the project root:
 ```
 mkdir build
@@ -39,15 +39,15 @@ cmake ..
 make -j
 ```
 
-## Running Benchmarks
-### Compare Against cuSPARSE:
+## 4. Running Benchmarks
+### 4.1 Compare Against cuSPARSE:
 ```
 cd build/
 python ../benchmarks/csrspmm_vs_cusparse.py
 ```
 
-### Compare Against `torch.sparse`
-First install the PyTorch extension
+### 4.2 Compare Against `torch.sparse`
+First install the PyTorch extension (from the project root)
 ```
 pip install -e .
 ```
@@ -56,7 +56,7 @@ Run
 python torch_csrspmm/torch_benchmarks.py
 ```
 
-### Profiling Kernels with Nsight Compute
+### 4.3 Profiling Kernels with Nsight Compute
 To generate `.ncu-rep` reports for each kernel
 ```
 cd build/
