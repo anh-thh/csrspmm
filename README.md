@@ -30,7 +30,7 @@
 - PyTorch with CUDA support (follow the [official PyTorch installation instructions](https://pytorch.org/get-started/locally/))
 - These following packages are also requires for plotting and utilities: `matplotlib`, `pandas`, `numpy`, `seaborn`, `setuptool`.
 
-To install our `torch_csrspmm` extension to you environment, run this (from the project root)
+To install our `torch_csrspmm` extension to your environment, run this (from the project root)
 ```
 pip install -e .
 ```
