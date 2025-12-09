@@ -46,18 +46,18 @@ make -j
 Note that you can adjust the compiler flags and target architecture in `CMakeLists.txt` to fit your machine.
 
 ## 4. Running Benchmarks
-### 4.1 Compare Against `cuSPARSE`:
+### 4.1 Compare against `cuSPARSE`:
 ```
 cd build/
 python ../benchmarks/csrspmm_vs_cusparse.py
 ```
 
-### 4.2 Compare Against `torch.sparse`
+### 4.2 Compare against `torch.sparse`
 ```
 python torch_csrspmm/torch_benchmarks.py
 ```
 
-### 4.3 Profiling Kernels with Nsight Compute
+### 4.3 Profiling kernels with Nsight Compute
 To generate `.ncu-rep` reports for each kernel 
 ```
 cd build/
@@ -68,4 +68,5 @@ This step requires:
 - Proper user permissions to access GPU performance counters (on some systems, this may require admin/root or enabling developer mode)
 
 ### Notes
-Results from our experiments (on a NVIDIA GeForce RTX4070) are save in `./results/`.
+- Results from our experiments (on a NVIDIA GeForce RTX4070) are save in `./results/`.
+- Code for unit tests and benchmarks are written in `./tests/` and `./benchmarks/`. Compile it using `CMakeLists.txt` and run with `-h` for further instructions.
