@@ -46,7 +46,7 @@ make -j
 Note that you can adjust the compiler flags and target architecture in `CMakeLists.txt` to fit your machine.
 
 ## 4. Running Benchmarks
-### 4.1 Compare Against cuSPARSE:
+### 4.1 Compare Against `cuSPARSE`:
 ```
 cd build/
 python ../benchmarks/csrspmm_vs_cusparse.py
@@ -58,11 +58,14 @@ python torch_csrspmm/torch_benchmarks.py
 ```
 
 ### 4.3 Profiling Kernels with Nsight Compute
-To generate `.ncu-rep` reports for each kernel
+To generate `.ncu-rep` reports for each kernel 
 ```
 cd build/
 bash profile_kernels.sh
 ```
+This step requires:
+- `ncu` (Nsight Compute) installed
+- Proper user permissions to access GPU performance counters (on some systems, this may require admin/root or enabling developer mode)
 
 ### Notes
 Results from our experiments are save in `./results/`.
