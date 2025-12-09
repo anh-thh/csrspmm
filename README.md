@@ -68,4 +68,5 @@ This step requires:
 - Proper user permissions to access GPU performance counters (on some systems, this may require admin/root or enabling developer mode)
 
 ### Notes
-Results from our experiments (on a NVIDIA GeForce RTX4070) are save in `./results/`.
+- Results from our experiments (on a NVIDIA GeForce RTX4070) are save in `./results/`.
+- Code for unit tests and benchmarks are written in `./tests/` and `./benchmarks/`. Compile it using `CMakeLists.txt` and run with `-h` for further instructions.
