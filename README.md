@@ -87,11 +87,11 @@ This step requires:
 ### Python API Performance vs `torch.sparse`
 | Algorithm              | Mean GFLOPS | Speedup |
 |------------------------|------------:|--------:|
-| WarpPerRowSmemFp4      | 479         | **2.30×** |
-| WarpPerRowFp4          | 466         | 2.27×    |
-| `torch.sparse.addmm`   | 347         | 1.55×    |
-| WarpPerRowSmem         | 324         | 1.70×    |
-| Naive                  | 310         | 1.63×    |
-| WarpPerRow             | 275         | 1.55×    |
-| `torch.sparse.mm`      | 240         | 1.00×    |
+| WarpPerRowSmemFp4      | 479         | **2.30x** |
+| WarpPerRowFp4          | 466         | 2.27x    |
+| `torch.sparse.addmm`   | 347         | 1.55x    |
+| WarpPerRowSmem         | 324         | 1.70x    |
+| Naive                  | 310         | 1.63x    |
+| WarpPerRow             | 275         | 1.55x    |
+| `torch.sparse.mm`      | 240         | 1.00x    |
 
