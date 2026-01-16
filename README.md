@@ -70,3 +70,28 @@ This step requires:
 ### Notes
 - Results from our experiments (on a NVIDIA GeForce RTX4070) are save in `./results/`.
 - Code for unit tests and benchmarks are written in `./tests/` and `./benchmarks/`. Compile it using `CMakeLists.txt` and run with `-h` for further instructions.
+
+## 5. Performance Reports
+### 5.1 Kernel-Level Performance vs cuSPARSE 
+
+| Algorithm              | Mean GFLOPS | Speedup vs cuSPARSE |
+|------------------------|-------------|---------------------|
+| WarpPerRowFp4          | 727         | **1.48x**           |
+| WarpPerRowSmemFp4      | 595         | 1.29x               |
+| Naive                  | 531         | 1.16x               |
+| WarpPerRowSmem         | 520         | 1.13x               |
+| cuSPARSE               | 488         | 1.00x               |
+| WarpPerRow             | 444         | 0.96x               |
+
+
+### Python API Performance vs `torch.sparse`
+| Algorithm              | Mean GFLOPS | Speedup |
+|------------------------|------------:|--------:|
+| WarpPerRowSmemFp4      | 479         | **2.30×** |
+| WarpPerRowFp4          | 466         | 2.27×    |
+| `torch.sparse.addmm`   | 347         | 1.55×    |
+| WarpPerRowSmem         | 324         | 1.70×    |
+| Naive                  | 310         | 1.63×    |
+| WarpPerRow             | 275         | 1.55×    |
+| `torch.sparse.mm`      | 240         | 1.00×    |
+
