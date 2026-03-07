@@ -72,7 +72,7 @@ This step requires:
 - Code for unit tests and benchmarks are written in `./tests/` and `./benchmarks/`. Compile it using `CMakeLists.txt` and run with `-h` for further instructions.
 
 ## 5. Performance Reports
-### 5.1 Kernel-Level Performance vs cuSPARSE 
+### Kernel-Level Performance vs cuSPARSE 
 
 | Algorithm              | Mean GFLOPS | Speedup vs cuSPARSE |
 |------------------------|-------------|---------------------|
