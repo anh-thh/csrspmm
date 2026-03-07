@@ -1,7 +1,7 @@
 # CSRSPMM: Optimized CUDA Kernels for CSR Sparse x Dense Matrix Multiplication
 **CSRSPMM** is a high-performance library for multiplying Compressed Sparse Row (CSR) matrices with dense matrices on NVIDIA GPUs. It includes a generic CUDA backend, and a PyTorch extension for easy integration into deep learning workflows.
 
-## 1. Repository Structure
+## 1 Repository Structure
 
 ```
 .
@@ -19,7 +19,7 @@
 **Note**: The project structure may evolve as more kernels and features are added.
 
 
-## 2. Requirements
+## 2 Requirements
 **CUDA**
 - CUDA Toolkit 12.0+ (tested heavily with CUDA 13.0)
 - Latest NVIDIA driver matching your toolkit
@@ -35,7 +35,7 @@ To install our `torch_csrspmm` extension to your environment, run this (from the
 pip install -e .
 ```
 
-## 3. Build Instructions
+## 3 Build Instructions
 From the project root:
 ```
 mkdir build
@@ -45,19 +45,19 @@ make -j
 ```
 Note that you can adjust the compiler flags and target architecture in `CMakeLists.txt` to fit your machine.
 
-## 4. Running Benchmarks
-### 4.1 Compare against `cuSPARSE`:
+## 4 Running Benchmarks
+**Compare against `cuSPARSE`**
 ```
 cd build/
 python csrspmm_vs_cusparse.py
 ```
 
-### 4.2 Compare against `torch.sparse`
+**Compare against `torch.sparse`**
 ```
 python torch_csrspmm/torch_benchmarks.py
 ```
 
-### 4.3 Profiling kernels with Nsight Compute
+**Profiling kernels with Nsight Compute** <br>
 To generate `.ncu-rep` reports for each kernel 
 ```
 cd build/
@@ -67,12 +67,12 @@ This step requires:
 - `ncu` (Nsight Compute) installed
 - Proper user permissions to access GPU performance counters (on some systems, this may require admin/root or enabling developer mode)
 
-### Notes
+*Notes*
 - Results from our experiments (on a NVIDIA GeForce RTX4070) are save in `./results/`.
 - Code for unit tests and benchmarks are written in `./tests/` and `./benchmarks/`. Compile it using `CMakeLists.txt` and run with `-h` for further instructions.
 
-## 5. Performance Reports
-### Kernel-Level Performance vs cuSPARSE 
+## 5 Performance Reports
+**Kernel-Level Performance vs cuSPARSE**
 
 | Algorithm              | Mean GFLOPS | Speedup vs cuSPARSE |
 |------------------------|-------------|---------------------|
@@ -84,7 +84,7 @@ This step requires:
 | WarpPerRow             | 444         | 0.96x               |
 
 
-### Python API Performance vs `torch.sparse`
+**Python API Performance vs `torch.sparse`**
 | Algorithm              | Mean GFLOPS | Speedup |
 |------------------------|------------:|--------:|
 | WarpPerRowSmemFp4      | 479         | **2.30x** |
