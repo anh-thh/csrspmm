@@ -16,7 +16,7 @@
 ├── setup.py             # Python packaging for PyTorch extension
 └── README.md
 ```
-**Note**: The project structure may evolve as more kernels and features are added.
+**Note**: This structure is subjects to change as more kernels and features are added.
 
 
 ## 2 Requirements
