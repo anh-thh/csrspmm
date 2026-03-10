@@ -20,8 +20,8 @@ def generate_random_csr(M, N, density=0.1):
 
     # Convert to CSR
     crow = [0]
-    col  = []
-    val  = []
+    col = []
+    val = []
 
     nnz = 0
     for i in range(M):
@@ -33,8 +33,8 @@ def generate_random_csr(M, N, density=0.1):
         crow.append(nnz)
 
     crow = torch.tensor(crow, dtype=torch.int32)
-    col  = torch.tensor(col, dtype=torch.int32)
-    val  = torch.tensor(val, dtype=torch.float32)
+    col = torch.tensor(col, dtype=torch.int32)
+    val = torch.tensor(val, dtype=torch.float32)
 
     return dense, crow, col, val
 
@@ -50,9 +50,9 @@ def run_single_test(M, N, K, device, algo="naive"):
 
     # Move to device (CPU or GPU)
     crow = crow.to(device)
-    col  = col.to(device)
-    val  = val.to(device)
-    B    = B.to(device)
+    col = col.to(device)
+    val = val.to(device)
+    B = B.to(device)
     A_dense = A_dense.to(device)
     max_row_nnz = int((crow[1:] - crow[:-1]).max().item())
 
