@@ -1,4 +1,6 @@
 ## Optimized CUDA Kernels for CSR Sparse x Dense Matrix Multiplication
+[![CodeFactor](https://www.codefactor.io/repository/github/anh-thh/csrspmm/badge/main)](https://www.codefactor.io/repository/github/anh-thh/csrspmm/overview/main)
+
 `csrspmm` is a high-performance library for multiplying Compressed Sparse Row (CSR) matrices with dense matrices on NVIDIA GPUs. It includes a generic CUDA backend, and a PyTorch extension for easy integration into deep learning workflows.
 
 ### 1. Repository Structure

@@ -52,12 +52,13 @@ void dense_init_random(DenseMatrix& A,
     int total = A.height * A.width;
 
     for (int i = 0; i < total; ++i) {
-        float r = float(rand()) / RAND_MAX;
+        unsigned int seed = 1234;
+        float r = (float)rand_r(&seed) / RAND_MAX;
 
         if (r < sparsity) {
             A.data[i] = 0.0f;
         } else {
-            float val = float(rand()) / RAND_MAX * (high - low) + low;
+            float val = (float)rand_r(&seed) / RAND_MAX * (high - low) + low;
             A.data[i] = integer_values ? float(int(val)) : val;
         }
     }
@@ -113,7 +114,6 @@ void dense_gemm_cpu(int M, int N, int K,
 {
     for (int i = 0; i < M; ++i) {
         for (int j = 0; j < K; ++j) {
-
             float sum = 0.0f;
 
             for (int k = 0; k < N; ++k) {
