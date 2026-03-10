@@ -56,7 +56,7 @@ def run_single_test(M, N, K, device, algo="naive"):
     A_dense = A_dense.to(device)
     max_row_nnz = int((crow[1:] - crow[:-1]).max().item())
 
-    # ---- Run your kernel ----
+    # ---- Run kernel ----
     alpha, beta = 1, 1 
     if algo == "naive":
         C1 = torch_csrspmm.csrspmm_naive(crow, col, val, B, alpha, beta)
