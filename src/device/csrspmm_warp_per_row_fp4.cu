@@ -30,7 +30,6 @@ void csrspmm_warp_per_row_fp4(
     float4* Crow4 = reinterpret_cast<float4*>(C + row * K);
 
     for (int col4 = lane; col4 < K_vec; col4 += WARP_SIZE) {
-
         float4 acc = make_float4(0,0,0,0);
 
         for (int j = row_start; j < row_end; j++) {
