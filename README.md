@@ -1,8 +1,11 @@
 ## Optimized CUDA Kernels for CSR Sparse x Dense Matrix Multiplication
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![CodeFactor](https://www.codefactor.io/repository/github/anh-thh/csrspmm/badge)](https://www.codefactor.io/repository/github/anh-thh/csrspmm)
+
 `csrspmm` is a high-performance library for multiplying Compressed Sparse Row (CSR) matrices with dense matrices on NVIDIA GPUs. It includes a generic CUDA backend, and a PyTorch extension for easy integration into deep learning workflows.
 
-### 1. Repository Structure
+## Repository
 
 ```
 .
@@ -20,7 +23,7 @@
 **Note**: This structure is subject to change as more kernels and features are added.
 
 
-### 2. Requirements
+## Requirements
 **CUDA**
 - CUDA Toolkit 12.0+ (tested heavily with CUDA 13.0)
 - Latest NVIDIA driver matching your toolkit
@@ -36,7 +39,7 @@ To install our `torch_csrspmm` extension to your environment, run this (from the
 pip install -e .
 ```
 
-### 3. Build Instructions
+## Build Instructions
 From the project root:
 ```
 mkdir build
@@ -46,7 +49,7 @@ make -j
 ```
 Note that you can adjust the compiler flags and target architecture in `CMakeLists.txt` to fit your machine.
 
-### 4. Running Benchmarks
+## Run Benchmarks
 **Compare against** `cuSPARSE`
 ```
 cd build/
@@ -72,7 +75,7 @@ This step requires:
 - Results from our experiments (on a NVIDIA GeForce RTX4070) are save in `./results/`.
 - Code for unit tests and benchmarks are written in `./tests/` and `./benchmarks/`. Compile it using `CMakeLists.txt` and run with `-h` for further instructions.
 
-### 5. Performance Reports
+## Benchmark Results
 **Kernel-Level Performance vs cuSPARSE**
 
 | Algorithm              | Mean GFLOPS | Speedup vs cuSPARSE |
