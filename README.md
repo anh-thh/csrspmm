@@ -89,7 +89,7 @@ This step requires:
 | WarpPerRow             | 444         | 0.96x               |
 
 
-**Python API Performance vs `torch.sparse`**
+**Python API Performance vs** `torch.sparse`
 | Algorithm              | Mean GFLOPS | Speedup |
 |------------------------|------------:|--------:|
 | WarpPerRowSmemFp4      | 479         | **2.30x** |
